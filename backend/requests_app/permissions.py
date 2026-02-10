@@ -15,3 +15,14 @@ class IsHelper(BasePermission):
     def has_permission(self, request, view):
         return bool(request.user and request.user.is_authenticated and request.user.role in ("helper", "admin"))
 
+class CanCloseRequest(BasePermission):
+    """
+    Закрывать заявку может:
+    - admin
+    - helper, который взял эту заявку в работу (owner-helper)
+    """
+    message = "Недостаточно прав для закрытия заявки."
+
+    def has_permission(self, request, view):
+        user = request.user
+        return bool(user and user.is_authenticated and (user.role in ["helper", "admin"]))

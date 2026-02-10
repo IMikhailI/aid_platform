@@ -3,6 +3,8 @@ from .models import AidRequest, RequestStatusHistory, HelpCommitment, RequestSta
 
 
 class AidRequestCreateSerializer(serializers.ModelSerializer):
+    urgency = serializers.IntegerField(min_value=1, max_value=5)
+
     class Meta:
         model = AidRequest
         fields = (
@@ -61,4 +63,22 @@ class ModerationActionSerializer(serializers.Serializer):
 class HelpCommitSerializer(serializers.Serializer):
     method = serializers.ChoiceField(choices=["certificate", "cart", "invoice", "mock"])
     note = serializers.CharField(required=False, allow_blank=True, default="")
+
+class RequestStatusHistorySerializer(serializers.ModelSerializer):
+    changed_by_username = serializers.CharField(source="changed_by.username", read_only=True)
+    changed_by_role = serializers.CharField(source="changed_by.role", read_only=True)
+
+    class Meta:
+        model = RequestStatusHistory
+        fields = [
+            "id",
+            "from_status",
+            "to_status",
+            "comment",
+            "changed_at",
+            "changed_by",
+            "changed_by_username",
+            "changed_by_role",
+        ]
+        read_only_fields = fields
 

@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.db import models
-
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 class RequestCategory(models.TextChoices):
     FOOD = "food", "Еда"
@@ -30,7 +30,11 @@ class AidRequest(models.Model):
     description = models.TextField()
     region = models.CharField(max_length=120)
     requested_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    urgency = models.PositiveSmallIntegerField(default=3)  # 1..5
+    urgency = models.PositiveSmallIntegerField(
+        default=3,
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+        help_text="Срочность от 1 до 5",
+    )
     status = models.CharField(
         max_length=20, choices=RequestStatus.choices, default=RequestStatus.ON_MODERATION
     )

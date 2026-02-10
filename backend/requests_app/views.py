@@ -11,6 +11,7 @@ from .serializers import (
     ModerationActionSerializer,
     HelpCommitSerializer,
 )
+from drf_spectacular.utils import extend_schema, OpenApiResponse
 
 
 class ApplicantCreateRequestView(generics.CreateAPIView):
@@ -52,6 +53,17 @@ class ModerationQueueView(generics.ListAPIView):
 class ModerateRequestView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsModerator]
 
+    @extend_schema(
+        request=ModerationActionSerializer,
+        responses={
+            200: OpenApiResponse(description="Заявка обработана"),
+            400: OpenApiResponse(description="Ошибка валидации"),
+            403: OpenApiResponse(description="Недостаточно прав"),
+            404: OpenApiResponse(description="Заявка не найдена"),
+        },
+        summary="Модерация заявки",
+        description="Moderator/admin: approve или reject заявки в очереди модерации",
+    ) 
     @transaction.atomic
     def post(self, request, request_id: int):
         serializer = ModerationActionSerializer(data=request.data)
@@ -88,7 +100,18 @@ class ModerateRequestView(APIView):
 
 class TakeRequestIntoWorkView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsHelper]
-
+    
+    @extend_schema(
+        request=HelpCommitSerializer,
+        responses={
+            200: OpenApiResponse(description="Заявка взята в работу"),
+            400: OpenApiResponse(description="Ошибка валидации"),
+            403: OpenApiResponse(description="Недостаточно прав"),
+            404: OpenApiResponse(description="Заявка не найдена"),
+        },
+        summary="Взять заявку в работу",
+        description="Helper/admin берёт опубликованную заявку в работу",
+    )
     @transaction.atomic
     def post(self, request, request_id: int):
         serializer = HelpCommitSerializer(data=request.data)

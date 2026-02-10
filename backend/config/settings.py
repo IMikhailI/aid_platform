@@ -17,6 +17,7 @@ INSTALLED_APPS = [
 
     "corsheaders",
     "rest_framework",
+    "drf_spectacular",
 
     "users",
     "requests_app",
@@ -88,7 +89,22 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
+    "DEFAULT_PERMISSION_CLASSES": (
+        "rest_framework.permissions.IsAuthenticatedOrReadOnly",
+    ),
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Aid Platform API",
+    "DESCRIPTION": "API для платформы адресной помощи: заявка, модерация, помощь, закрытие кейса",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "SWAGGER_UI_SETTINGS": {
+        "persistAuthorization": True,  # чтобы токен не пропадал после refresh страницы
+    },
+}
+
 
 AUTH_USER_MODEL = "users.User"
 

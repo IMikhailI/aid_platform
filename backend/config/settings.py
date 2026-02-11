@@ -24,6 +24,7 @@ INSTALLED_APPS = [
     "requests_app",
     "moderation",
     "audit",
+    "fraud",
 ]
 
 MIDDLEWARE = [

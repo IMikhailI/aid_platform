@@ -7,6 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
 
+
 from .models import AidRequest, RequestStatus, RequestStatusHistory, HelpCommitment
 from .permissions import IsApplicant, IsModerator, IsHelper, CanCloseRequest
 from .serializers import (
@@ -16,6 +17,8 @@ from .serializers import (
     HelpCommitSerializer,
     RequestStatusHistorySerializer,
 )
+from fraud.services.engine import evaluate_request_safe
+from fraud.models import FraudAction
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 
 class DefaultPagePagination(PageNumberPagination):
@@ -26,6 +29,39 @@ class DefaultPagePagination(PageNumberPagination):
 class ApplicantCreateRequestView(generics.CreateAPIView):
     serializer_class = AidRequestCreateSerializer
     permission_classes = [permissions.IsAuthenticated, IsApplicant]
+
+    @transaction.atomic
+    def perform_create(self, serializer):
+        # 1) Создаем заявку от текущего applicant
+        obj = serializer.save()
+
+        # 2) Запускаем антифрод (safe wrapper)
+        decision = evaluate_request_safe(obj)
+
+        # 3) Политика fail-closed для block:
+        # если anti-fraud выдал block -> не даём двигаться дальше автоматически
+        # (статус уже on_moderation по твоему lifecycle)
+        if decision and decision.action == FraudAction.BLOCK:
+            if obj.status != RequestStatus.ON_MODERATION:
+                obj.status = RequestStatus.ON_MODERATION
+                obj.save(update_fields=["status", "updated_at"])
+
+        # 4) Гарантируем запись в историю при создании
+        # если уже есть история "-> on_moderation", дубль не пишем
+        has_initial = RequestStatusHistory.objects.filter(
+            aid_request=obj,
+            new_status=RequestStatus.ON_MODERATION
+        ).exists()
+
+        if not has_initial:
+            RequestStatusHistory.objects.create(
+                aid_request=obj,
+                old_status="",
+                new_status=RequestStatus.ON_MODERATION,
+                changed_by=self.request.user,
+                comment="Заявка создана и отправлена на модерацию",
+            )
+
 
 class ApplicantOwnRequestsView(generics.ListAPIView):
     serializer_class = AidRequestListSerializer
@@ -61,19 +97,47 @@ class ModerationQueueView(generics.ListAPIView):
     pagination_class = DefaultPagePagination
 
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ["category"]
+    filterset_fields = ["category", "is_flagged"]   # добавили is_flagged
     search_fields = ["title", "description", "region"]
     ordering_fields = ["created_at", "risk_score"]
     ordering = ["-created_at"]
 
     def get_queryset(self):
-        qs = AidRequest.objects.filter(status=RequestStatus.ON_MODERATION)
+        qs = (
+            AidRequest.objects
+            .filter(status=RequestStatus.ON_MODERATION)
+            .select_related("applicant")
+            .prefetch_related("fraud_decision")
+        )
 
+        # region case-insensitive
         region = self.request.query_params.get("region")
         if region:
             qs = qs.filter(region__iexact=region)
 
+        # risk range
+        risk_min = self.request.query_params.get("risk_min")
+        if risk_min is not None and risk_min != "":
+            try:
+                qs = qs.filter(risk_score__gte=float(risk_min))
+            except ValueError:
+                pass
+
+        risk_max = self.request.query_params.get("risk_max")
+        if risk_max is not None and risk_max != "":
+            try:
+                qs = qs.filter(risk_score__lte=float(risk_max))
+            except ValueError:
+                pass
+
+        # fraud action from related FraudDecision
+        # (если related_name у тебя другой — подправь "fraud_decision__action")
+        fraud_action = self.request.query_params.get("fraud_action")
+        if fraud_action:
+            qs = qs.filter(fraud_decision__action=fraud_action)
+
         return qs
+
 
 class ModerateRequestView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsModerator]
@@ -254,7 +318,7 @@ class RequestHistoryView(APIView):
             else:
                 return Response({"detail": "Forbidden."}, status=status.HTTP_403_FORBIDDEN)
 
-        qs = RequestStatusHistory.objects.filter(aid_request=aid_request).select_related("changed_by").order_by("-changed_at")
+        qs = RequestStatusHistory.objects.filter(aid_request=aid_request).select_related("changed_by").order_by("-created_at")
         serializer = RequestStatusHistorySerializer(qs, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 

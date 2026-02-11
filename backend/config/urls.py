@@ -36,5 +36,6 @@ urlpatterns = [
     path("api/health/", health),
     path("api/auth/", include("users.urls")),
     path("api/requests/", include("requests_app.urls")),
+    path("api/fraud/", include("fraud.api.urls")),
 ]
 

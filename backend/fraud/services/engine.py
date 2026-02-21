@@ -33,7 +33,7 @@ def _action_from_level(level: str) -> str:
 
 
 @transaction.atomic
-def evaluate_request(aid_request: AidRequest, engine_version: str = "rules-v1") -> FraudDecision:
+def evaluate_request(aid_request: AidRequest, engine_version: str = "rules-v3") -> FraudDecision:
     """
     Основной вход антифрода.
     - собирает сигналы
@@ -43,6 +43,10 @@ def evaluate_request(aid_request: AidRequest, engine_version: str = "rules-v1") 
     """
     signals: list[Signal] = collect_signals(aid_request)
     score = max(0, min(100, sum(s.weight for s in signals)))
+    reasons = [
+        {"code": s.code, "weight": s.weight, "details": s.details}
+        for s in signals
+    ]
     risk_level = _risk_level_from_score(score)
     action = _action_from_level(risk_level)
 
@@ -60,8 +64,6 @@ def evaluate_request(aid_request: AidRequest, engine_version: str = "rules-v1") 
     ]
     if checks_to_create:
         FraudCheck.objects.bulk_create(checks_to_create)
-
-    reasons = [{"code": s.code, "weight": s.weight, "details": s.details} for s in signals]
 
     decision, _created = FraudDecision.objects.update_or_create(
         aid_request=aid_request,
@@ -89,7 +91,7 @@ def evaluate_request(aid_request: AidRequest, engine_version: str = "rules-v1") 
     return decision
 
 
-def evaluate_request_safe(aid_request: AidRequest, engine_version: str = "rules-v1") -> FraudDecision | None:
+def evaluate_request_safe(aid_request: AidRequest, engine_version: str = "rules-v3") -> FraudDecision | None:
     """
     Безопасная обёртка:
     если антифрод падает, не роняем основной create-flow.

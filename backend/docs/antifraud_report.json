@@ -1,0 +1,176 @@
+[
+  {
+    "case_id": "AF-01 baseline",
+    "request_id": 88,
+    "score": 0,
+    "risk_level": "low",
+    "action": "allow",
+    "engine_version": "rules-v3",
+    "reasons": []
+  },
+  {
+    "case_id": "AF-02 exact #1",
+    "request_id": 89,
+    "score": 0,
+    "risk_level": "low",
+    "action": "allow",
+    "engine_version": "rules-v3",
+    "reasons": []
+  },
+  {
+    "case_id": "AF-02 exact #2",
+    "request_id": 90,
+    "score": 50,
+    "risk_level": "high",
+    "action": "manual_review",
+    "engine_version": "rules-v3",
+    "reasons": [
+      {
+        "code": "BURST_CREATION",
+        "weight": 20,
+        "details": {
+          "count_last_30m": 3,
+          "buckets": {
+            "3+": 20,
+            "5+": 35,
+            "8+": 55
+          }
+        }
+      },
+      {
+        "code": "EXACT_DUPLICATE_SAME_AUTHOR",
+        "weight": 30,
+        "details": {
+          "exact_duplicates_count": 1,
+          "exact_duplicate_ids": [
+            89
+          ],
+          "window_minutes": 60
+        }
+      }
+    ]
+  },
+  {
+    "case_id": "AF-02 exact #3",
+    "request_id": 91,
+    "score": 95,
+    "risk_level": "critical",
+    "action": "block",
+    "engine_version": "rules-v3",
+    "reasons": [
+      {
+        "code": "BURST_CREATION",
+        "weight": 20,
+        "details": {
+          "count_last_30m": 4,
+          "buckets": {
+            "3+": 20,
+            "5+": 35,
+            "8+": 55
+          }
+        }
+      },
+      {
+        "code": "EXACT_DUPLICATE_SAME_AUTHOR",
+        "weight": 75,
+        "details": {
+          "exact_duplicates_count": 2,
+          "exact_duplicate_ids": [
+            90,
+            89
+          ],
+          "window_minutes": 60
+        }
+      }
+    ]
+  },
+  {
+    "case_id": "AF-03 loose #1",
+    "request_id": 92,
+    "score": 35,
+    "risk_level": "medium",
+    "action": "manual_review",
+    "engine_version": "rules-v3",
+    "reasons": [
+      {
+        "code": "BURST_CREATION",
+        "weight": 35,
+        "details": {
+          "count_last_30m": 5,
+          "buckets": {
+            "3+": 20,
+            "5+": 35,
+            "8+": 55
+          }
+        }
+      }
+    ]
+  },
+  {
+    "case_id": "AF-03 loose #2",
+    "request_id": 93,
+    "score": 60,
+    "risk_level": "high",
+    "action": "manual_review",
+    "engine_version": "rules-v3",
+    "reasons": [
+      {
+        "code": "BURST_CREATION",
+        "weight": 35,
+        "details": {
+          "count_last_30m": 6,
+          "buckets": {
+            "3+": 20,
+            "5+": 35,
+            "8+": 55
+          }
+        }
+      },
+      {
+        "code": "LOOSE_DUPLICATE_SAME_AUTHOR",
+        "weight": 25,
+        "details": {
+          "loose_duplicates_count": 1,
+          "loose_duplicate_ids": [
+            92
+          ],
+          "window_minutes": 60
+        }
+      }
+    ]
+  },
+  {
+    "case_id": "AF-03 loose #3",
+    "request_id": 94,
+    "score": 75,
+    "risk_level": "critical",
+    "action": "block",
+    "engine_version": "rules-v3",
+    "reasons": [
+      {
+        "code": "BURST_CREATION",
+        "weight": 35,
+        "details": {
+          "count_last_30m": 7,
+          "buckets": {
+            "3+": 20,
+            "5+": 35,
+            "8+": 55
+          }
+        }
+      },
+      {
+        "code": "LOOSE_DUPLICATE_SAME_AUTHOR",
+        "weight": 40,
+        "details": {
+          "loose_duplicates_count": 2,
+          "loose_duplicate_ids": [
+            93,
+            92
+          ],
+          "window_minutes": 60
+        }
+      }
+    ]
+  }
+]

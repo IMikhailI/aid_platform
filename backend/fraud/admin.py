@@ -1,3 +1,4 @@
+import json
 from django.contrib import admin
 from .models import FraudCheck, FraudDecision, FraudOverride
 
@@ -16,6 +17,13 @@ class FraudDecisionAdmin(admin.ModelAdmin):
     list_filter = ("risk_level", "action", "engine_version", "decided_at")
     search_fields = ("aid_request__id",)
     ordering = ("-decided_at",)
+
+    readonly_fields = ("pretty_reasons",)
+
+    def pretty_reasons(self, obj):
+        return json.dumps(obj.reasons, ensure_ascii=False, indent=2)
+
+    pretty_reasons.short_description = "Reasons (debug)"
 
 
 @admin.register(FraudOverride)

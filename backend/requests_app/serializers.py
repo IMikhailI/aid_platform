@@ -17,20 +17,11 @@ class AidRequestCreateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         user = self.context["request"].user
 
-        # Базовый rule-based антифрод (MVP)
-        risk = 0
-        if validated_data.get("requested_amount", 0) and validated_data["requested_amount"] > 20000:
-            risk += 40
-        if validated_data.get("urgency", 3) >= 5:
-            risk += 20
-
-        flagged = risk >= 50
-
         obj = AidRequest.objects.create(
             applicant=user,
             status=RequestStatus.ON_MODERATION,
-            risk_score=risk,
-            is_flagged=flagged,
+            risk_score=0,
+            is_flagged=False,
             **validated_data
         )
 
@@ -65,6 +56,9 @@ class HelpCommitSerializer(serializers.Serializer):
     note = serializers.CharField(required=False, allow_blank=True, default="")
 
 class RequestStatusHistorySerializer(serializers.ModelSerializer):
+    from_status = serializers.CharField(source="old_status", read_only=True)
+    to_status = serializers.CharField(source="new_status", read_only=True)
+    changed_at = serializers.DateTimeField(source="created_at", read_only=True)
     changed_by_username = serializers.CharField(source="changed_by.username", read_only=True)
     changed_by_role = serializers.CharField(source="changed_by.role", read_only=True)
 
@@ -81,4 +75,3 @@ class RequestStatusHistorySerializer(serializers.ModelSerializer):
             "changed_by_role",
         ]
         read_only_fields = fields
-

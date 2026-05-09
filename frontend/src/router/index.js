@@ -10,7 +10,7 @@ const routes = [
   { path: "/", redirect: "/login" },
   { path: "/login", component: LoginPage },
   { path: "/helper", component: HelperBoard, meta: { auth: true, role: "helper" } },
-  { path: "/moderator", component: ModeratorBoard, meta: { auth: true, role: "moderator" } },
+  { path: "/moderator", component: ModeratorBoard, meta: { auth: true, role: ["moderator", "admin"] } },
   { path: "/applicant", component: ApplicantBoard, meta: { auth: true, role: "applicant" } },
 ];
 
@@ -25,9 +25,10 @@ router.beforeEach((to, _from, next) => {
   if (!isAuthenticated()) return next("/login");
 
   const role = getRole();
-  if (to.meta.role && to.meta.role !== role) {
+  const allowedRoles = Array.isArray(to.meta.role) ? to.meta.role : [to.meta.role];
+  if (to.meta.role && !allowedRoles.includes(role)) {
     if (role === "helper") return next("/helper");
-    if (role === "moderator") return next("/moderator");
+    if (role === "moderator" || role === "admin") return next("/moderator");
     if (role === "applicant") return next("/applicant");
     return next("/login");
   }
@@ -36,4 +37,3 @@ router.beforeEach((to, _from, next) => {
 });
 
 export default router;
-

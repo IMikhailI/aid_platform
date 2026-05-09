@@ -57,7 +57,7 @@ async function loadMine() {
   try {
     error.value = "";
     const resp = await api.get("/api/requests/applicant/my/");
-    myRequests.value = resp.data;
+    myRequests.value = resp.data?.results ?? resp.data ?? [];
   } catch (e) {
     error.value = e?.response?.data?.detail || "Failed to load my requests";
   }
@@ -90,4 +90,3 @@ label { display: grid; gap: 4px; }
 .list { margin-top: 10px; display: grid; gap: 10px; }
 .error { color: #b00020; }
 </style>
-

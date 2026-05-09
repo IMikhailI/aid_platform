@@ -1,29 +1,67 @@
 [
   {
     "case_id": "AF-01 baseline",
-    "request_id": 88,
+    "request_id": 47,
     "score": 0,
     "risk_level": "low",
+    "base_action": "allow",
     "action": "allow",
+    "is_overridden": false,
     "engine_version": "rules-v3",
+    "top_signal_codes": [],
     "reasons": []
   },
   {
     "case_id": "AF-02 exact #1",
-    "request_id": 89,
+    "request_id": 48,
     "score": 0,
     "risk_level": "low",
+    "base_action": "allow",
     "action": "allow",
+    "is_overridden": false,
     "engine_version": "rules-v3",
+    "top_signal_codes": [],
     "reasons": []
   },
   {
     "case_id": "AF-02 exact #2",
-    "request_id": 90,
-    "score": 50,
-    "risk_level": "high",
+    "request_id": 49,
+    "score": 30,
+    "risk_level": "medium",
+    "base_action": "manual_review",
     "action": "manual_review",
+    "is_overridden": false,
     "engine_version": "rules-v3",
+    "top_signal_codes": [
+      "EXACT_DUPLICATE_SAME_AUTHOR"
+    ],
+    "reasons": [
+      {
+        "code": "EXACT_DUPLICATE_SAME_AUTHOR",
+        "weight": 30,
+        "details": {
+          "exact_duplicates_count": 1,
+          "exact_duplicate_ids": [
+            48
+          ],
+          "window_minutes": 60
+        }
+      }
+    ]
+  },
+  {
+    "case_id": "AF-02 exact #3",
+    "request_id": 50,
+    "score": 95,
+    "risk_level": "critical",
+    "base_action": "block",
+    "action": "block",
+    "is_overridden": false,
+    "engine_version": "rules-v3",
+    "top_signal_codes": [
+      "EXACT_DUPLICATE_SAME_AUTHOR",
+      "BURST_CREATION"
+    ],
     "reasons": [
       {
         "code": "BURST_CREATION",
@@ -39,45 +77,12 @@
       },
       {
         "code": "EXACT_DUPLICATE_SAME_AUTHOR",
-        "weight": 30,
-        "details": {
-          "exact_duplicates_count": 1,
-          "exact_duplicate_ids": [
-            89
-          ],
-          "window_minutes": 60
-        }
-      }
-    ]
-  },
-  {
-    "case_id": "AF-02 exact #3",
-    "request_id": 91,
-    "score": 95,
-    "risk_level": "critical",
-    "action": "block",
-    "engine_version": "rules-v3",
-    "reasons": [
-      {
-        "code": "BURST_CREATION",
-        "weight": 20,
-        "details": {
-          "count_last_30m": 4,
-          "buckets": {
-            "3+": 20,
-            "5+": 35,
-            "8+": 55
-          }
-        }
-      },
-      {
-        "code": "EXACT_DUPLICATE_SAME_AUTHOR",
         "weight": 75,
         "details": {
           "exact_duplicates_count": 2,
           "exact_duplicate_ids": [
-            90,
-            89
+            49,
+            48
           ],
           "window_minutes": 60
         }
@@ -86,53 +91,36 @@
   },
   {
     "case_id": "AF-03 loose #1",
-    "request_id": 92,
-    "score": 35,
-    "risk_level": "medium",
-    "action": "manual_review",
+    "request_id": 51,
+    "score": 0,
+    "risk_level": "low",
+    "base_action": "allow",
+    "action": "allow",
+    "is_overridden": false,
     "engine_version": "rules-v3",
-    "reasons": [
-      {
-        "code": "BURST_CREATION",
-        "weight": 35,
-        "details": {
-          "count_last_30m": 5,
-          "buckets": {
-            "3+": 20,
-            "5+": 35,
-            "8+": 55
-          }
-        }
-      }
-    ]
+    "top_signal_codes": [],
+    "reasons": []
   },
   {
     "case_id": "AF-03 loose #2",
-    "request_id": 93,
-    "score": 60,
-    "risk_level": "high",
+    "request_id": 52,
+    "score": 25,
+    "risk_level": "medium",
+    "base_action": "manual_review",
     "action": "manual_review",
+    "is_overridden": false,
     "engine_version": "rules-v3",
+    "top_signal_codes": [
+      "LOOSE_DUPLICATE_SAME_AUTHOR"
+    ],
     "reasons": [
-      {
-        "code": "BURST_CREATION",
-        "weight": 35,
-        "details": {
-          "count_last_30m": 6,
-          "buckets": {
-            "3+": 20,
-            "5+": 35,
-            "8+": 55
-          }
-        }
-      },
       {
         "code": "LOOSE_DUPLICATE_SAME_AUTHOR",
         "weight": 25,
         "details": {
           "loose_duplicates_count": 1,
           "loose_duplicate_ids": [
-            92
+            51
           ],
           "window_minutes": 60
         }
@@ -141,17 +129,23 @@
   },
   {
     "case_id": "AF-03 loose #3",
-    "request_id": 94,
-    "score": 75,
-    "risk_level": "critical",
-    "action": "block",
+    "request_id": 53,
+    "score": 60,
+    "risk_level": "high",
+    "base_action": "manual_review",
+    "action": "manual_review",
+    "is_overridden": false,
     "engine_version": "rules-v3",
+    "top_signal_codes": [
+      "LOOSE_DUPLICATE_SAME_AUTHOR",
+      "BURST_CREATION"
+    ],
     "reasons": [
       {
         "code": "BURST_CREATION",
-        "weight": 35,
+        "weight": 20,
         "details": {
-          "count_last_30m": 7,
+          "count_last_30m": 3,
           "buckets": {
             "3+": 20,
             "5+": 35,
@@ -165,10 +159,187 @@
         "details": {
           "loose_duplicates_count": 2,
           "loose_duplicate_ids": [
-            93,
-            92
+            52,
+            51
           ],
           "window_minutes": 60
+        }
+      }
+    ]
+  },
+  {
+    "case_id": "AF-04 high amount",
+    "request_id": 54,
+    "score": 30,
+    "risk_level": "medium",
+    "base_action": "manual_review",
+    "action": "manual_review",
+    "is_overridden": false,
+    "engine_version": "rules-v3",
+    "top_signal_codes": [
+      "HIGH_REQUESTED_AMOUNT"
+    ],
+    "reasons": [
+      {
+        "code": "HIGH_REQUESTED_AMOUNT",
+        "weight": 30,
+        "details": {
+          "requested_amount": "25000.00",
+          "thresholds": {
+            "10000+": 15,
+            "20000+": 30,
+            "50000+": 45
+          }
+        }
+      }
+    ]
+  },
+  {
+    "case_id": "AF-05 amount+urgency",
+    "request_id": 55,
+    "score": 70,
+    "risk_level": "high",
+    "base_action": "manual_review",
+    "action": "manual_review",
+    "is_overridden": false,
+    "engine_version": "rules-v3",
+    "top_signal_codes": [
+      "HIGH_REQUESTED_AMOUNT",
+      "AMOUNT_URGENCY_COMBO",
+      "EXTREME_URGENCY"
+    ],
+    "reasons": [
+      {
+        "code": "HIGH_REQUESTED_AMOUNT",
+        "weight": 45,
+        "details": {
+          "requested_amount": "50000.00",
+          "thresholds": {
+            "10000+": 15,
+            "20000+": 30,
+            "50000+": 45
+          }
+        }
+      },
+      {
+        "code": "EXTREME_URGENCY",
+        "weight": 10,
+        "details": {
+          "urgency": 5
+        }
+      },
+      {
+        "code": "AMOUNT_URGENCY_COMBO",
+        "weight": 15,
+        "details": {
+          "requested_amount": "50000.00",
+          "urgency": 5
+        }
+      }
+    ]
+  },
+  {
+    "case_id": "AF-06 same-device #1",
+    "request_id": 56,
+    "score": 0,
+    "risk_level": "low",
+    "base_action": "allow",
+    "action": "allow",
+    "is_overridden": false,
+    "engine_version": "rules-v3",
+    "top_signal_codes": [],
+    "reasons": []
+  },
+  {
+    "case_id": "AF-06 same-device #2",
+    "request_id": 57,
+    "score": 50,
+    "risk_level": "high",
+    "base_action": "manual_review",
+    "action": "manual_review",
+    "is_overridden": false,
+    "engine_version": "rules-v3",
+    "top_signal_codes": [
+      "SAME_DEVICE_EXACT_DUPLICATE_CROSS_ACCOUNT",
+      "DEVICE_SHARED_ACROSS_ACCOUNTS"
+    ],
+    "reasons": [
+      {
+        "code": "DEVICE_SHARED_ACROSS_ACCOUNTS",
+        "weight": 15,
+        "details": {
+          "accounts_count": 2,
+          "applicant_ids": [
+            62,
+            63
+          ]
+        }
+      },
+      {
+        "code": "SAME_DEVICE_EXACT_DUPLICATE_CROSS_ACCOUNT",
+        "weight": 35,
+        "details": {
+          "matches_count": 1,
+          "matched_requests": [
+            {
+              "id": 56,
+              "applicant_id": 62
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "case_id": "AF-07 same-ip #1",
+    "request_id": 58,
+    "score": 0,
+    "risk_level": "low",
+    "base_action": "allow",
+    "action": "allow",
+    "is_overridden": false,
+    "engine_version": "rules-v3",
+    "top_signal_codes": [],
+    "reasons": []
+  },
+  {
+    "case_id": "AF-07 same-ip #2",
+    "request_id": 59,
+    "score": 25,
+    "risk_level": "medium",
+    "base_action": "manual_review",
+    "action": "manual_review",
+    "is_overridden": false,
+    "engine_version": "rules-v3",
+    "top_signal_codes": [
+      "SAME_IP_EXACT_DUPLICATE_CROSS_ACCOUNT",
+      "IP_SHARED_ACROSS_ACCOUNTS"
+    ],
+    "reasons": [
+      {
+        "code": "IP_SHARED_ACROSS_ACCOUNTS",
+        "weight": 3,
+        "details": {
+          "accounts_count": 2,
+          "applicant_ids": [
+            64,
+            65
+          ],
+          "window_hours": 24
+        }
+      },
+      {
+        "code": "SAME_IP_EXACT_DUPLICATE_CROSS_ACCOUNT",
+        "weight": 22,
+        "details": {
+          "matches_count": 1,
+          "matched_requests": [
+            {
+              "id": 58,
+              "applicant_id": 64
+            }
+          ],
+          "window_hours": 24
         }
       }
     ]

@@ -61,6 +61,12 @@ class FraudDecision(models.Model):
         choices=FraudAction.choices,
         default=FraudAction.ALLOW,
     )
+    base_action = models.CharField(
+        max_length=20,
+        choices=FraudAction.choices,
+        default=FraudAction.ALLOW,
+    )
+    is_overridden = models.BooleanField(default=False)
     reasons = models.JSONField(default=list, blank=True)
     engine_version = models.CharField(max_length=32, default="rules-v1")
     decided_at = models.DateTimeField(auto_now=True)
@@ -70,6 +76,8 @@ class FraudDecision(models.Model):
             models.Index(fields=["score"]),
             models.Index(fields=["risk_level"]),
             models.Index(fields=["action"]),
+            models.Index(fields=["base_action"]),
+            models.Index(fields=["is_overridden"]),
             models.Index(fields=["decided_at"]),
         ]
 
@@ -105,4 +113,3 @@ class FraudOverride(models.Model):
 
     def __str__(self):
         return f"request={self.aid_request_id} override={self.old_action}->{self.new_action}"
-

@@ -51,7 +51,8 @@ class FraudOverrideView(APIView):
         comment = serializer.validated_data["comment"]
 
         decision.action = new_action
-        decision.save(update_fields=["action", "decided_at"])
+        decision.is_overridden = True
+        decision.save(update_fields=["action", "is_overridden", "decided_at"])
 
         override = FraudOverride.objects.create(
             aid_request=aid_request,
@@ -78,4 +79,3 @@ class FraudRecheckView(APIView):
             )
 
         return Response(FraudDecisionSerializer(decision).data, status=status.HTTP_200_OK)
-

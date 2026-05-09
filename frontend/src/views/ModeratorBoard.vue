@@ -31,7 +31,7 @@ async function load() {
   try {
     error.value = "";
     const resp = await api.get("/api/requests/moderation/queue/");
-    items.value = resp.data;
+    items.value = resp.data?.results ?? resp.data ?? [];
   } catch (e) {
     error.value = e?.response?.data?.detail || "Failed to load queue";
   }
@@ -55,4 +55,3 @@ onMounted(load);
 .row { display: flex; gap: 8px; }
 .error { color: #b00020; }
 </style>
-

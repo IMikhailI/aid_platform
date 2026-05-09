@@ -106,6 +106,30 @@ class RequestsFlowAPITests(APITestCase):
         self.assertTrue(history.exists(), "History must contain initial status transition")
         self.assertEqual(history.last().new_status, RequestStatus.ON_MODERATION)
 
+    def test_create_request_persists_device_telemetry_hashes(self):
+        self.auth(self.applicant)
+        payload = {
+            "title": "Need medicines",
+            "description": "Urgent help needed",
+            "category": AidRequest._meta.get_field("category").choices[0][0],
+            "urgency": 3,
+            "region": "Berlin",
+        }
+        resp = self.client.post(
+            "/api/requests/applicant/create/",
+            payload,
+            format="json",
+            HTTP_X_DEVICE_ID="device-for-test",
+            HTTP_USER_AGENT="pytest-agent",
+            REMOTE_ADDR="10.1.2.3",
+        )
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED, getattr(resp, "data", resp.content.decode()))
+
+        req = AidRequest.objects.get(id=resp.data["id"])
+        self.assertTrue(req.device_id_hash)
+        self.assertTrue(req.ip_hash)
+        self.assertTrue(req.user_agent_hash)
+
     def test_moderator_can_approve_request(self):
         req = self.create_request()
 

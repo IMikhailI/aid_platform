@@ -18,6 +18,7 @@ from .serializers import (
     RequestStatusHistorySerializer,
 )
 from fraud.services.engine import evaluate_request_safe
+from fraud.services.device import extract_request_telemetry
 from fraud.models import FraudAction
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 
@@ -34,6 +35,11 @@ class ApplicantCreateRequestView(generics.CreateAPIView):
     def perform_create(self, serializer):
         # 1) Создаем заявку от текущего applicant
         obj = serializer.save()
+        telemetry = extract_request_telemetry(self.request)
+        obj.device_id_hash = telemetry["device_id_hash"]
+        obj.ip_hash = telemetry["ip_hash"]
+        obj.user_agent_hash = telemetry["user_agent_hash"]
+        obj.save(update_fields=["device_id_hash", "ip_hash", "user_agent_hash", "updated_at"])
 
         # 2) Запускаем антифрод (safe wrapper)
         decision = evaluate_request_safe(obj)
@@ -321,4 +327,3 @@ class RequestHistoryView(APIView):
         qs = RequestStatusHistory.objects.filter(aid_request=aid_request).select_related("changed_by").order_by("-created_at")
         serializer = RequestStatusHistorySerializer(qs, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
-

@@ -11,6 +11,8 @@ services:
       - "5433:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
+    networks:
+      - aid_network
 
   backend:
     build: ./backend
@@ -25,6 +27,8 @@ services:
       - .env
     depends_on:
       - db
+    networks:
+      - aid_network
 
   frontend:
     image: node:20-alpine
@@ -37,7 +41,15 @@ services:
       - "5173:5173"
     depends_on:
       - backend
+    networks:
+      - aid_network
 
 volumes:
   pg_data:
 
+networks:
+  aid_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.10.0/24

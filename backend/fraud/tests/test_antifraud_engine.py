@@ -58,6 +58,12 @@ class AntiFraudEngineTests(TestCase):
             role="applicant",
             region="Berlin",
         )
+        self.other_applicant = User.objects.create_user(
+            username="af_other_applicant",
+            password="Pass12345!",
+            role="applicant",
+            region="Berlin",
+        )
 
     def test_af01_baseline_allow(self):
         r1 = make_request(self.applicant, "Нужна помощь", "Обычное описание без повторов")
@@ -117,3 +123,86 @@ class AntiFraudEngineTests(TestCase):
         codes = {x.get("code") for x in last.reasons}
         self.assertIn("BURST_CREATION", codes)
         self.assertGreaterEqual(last.score, 20, last.reasons)
+
+    def test_af05_high_amount_goes_to_manual_review(self):
+        r1 = make_request(
+            self.applicant,
+            "Нужна крупная помощь",
+            "Запрос на большую сумму для проверки anti-fraud",
+            requested_amount="25000.00",
+            urgency=3,
+        )
+        d1 = evaluate_request(r1)
+
+        self.assertEqual(d1.action, FraudAction.MANUAL_REVIEW, d1.reasons)
+        codes = {x.get("code") for x in d1.reasons}
+        self.assertIn("HIGH_REQUESTED_AMOUNT", codes)
+
+    def test_af06_high_amount_and_urgency_escalate_but_do_not_block(self):
+        r1 = make_request(
+            self.applicant,
+            "Очень срочная крупная заявка",
+            "Высокая сумма и максимальная срочность должны идти в ручной review",
+            requested_amount="50000.00",
+            urgency=5,
+        )
+        d1 = evaluate_request(r1)
+
+        self.assertEqual(d1.action, FraudAction.MANUAL_REVIEW, d1.reasons)
+        self.assertGreaterEqual(d1.score, 50, d1.reasons)
+        self.assertLess(d1.score, 75, d1.reasons)
+
+        codes = {x.get("code") for x in d1.reasons}
+        self.assertIn("HIGH_REQUESTED_AMOUNT", codes)
+        self.assertIn("EXTREME_URGENCY", codes)
+        self.assertIn("AMOUNT_URGENCY_COMBO", codes)
+
+    def test_af07_same_device_cross_account_duplicate_escalates(self):
+        shared_device = "shared-device-hash"
+
+        r1 = make_request(
+            self.applicant,
+            "Нужна помощь на продукты",
+            "Одинаковый текст для проверки same-device сигнала",
+            device_id_hash=shared_device,
+        )
+        d1 = evaluate_request(r1)
+        self.assertEqual(d1.action, FraudAction.ALLOW, d1.reasons)
+
+        r2 = make_request(
+            self.other_applicant,
+            "Нужна помощь на продукты",
+            "Одинаковый текст для проверки same-device сигнала",
+            device_id_hash=shared_device,
+        )
+        d2 = evaluate_request(r2)
+
+        self.assertEqual(d2.action, FraudAction.MANUAL_REVIEW, d2.reasons)
+        codes = {x.get("code") for x in d2.reasons}
+        self.assertIn("DEVICE_SHARED_ACROSS_ACCOUNTS", codes)
+        self.assertIn("SAME_DEVICE_EXACT_DUPLICATE_CROSS_ACCOUNT", codes)
+
+    def test_af08_same_ip_cross_account_duplicate_escalates(self):
+        shared_ip_hash = "shared-ip-hash"
+
+        r1 = make_request(
+            self.applicant,
+            "Нужна помощь на оплату лекарств",
+            "Одинаковый текст для проверки same-ip сигнала",
+            ip_hash=shared_ip_hash,
+        )
+        d1 = evaluate_request(r1)
+        self.assertEqual(d1.action, FraudAction.ALLOW, d1.reasons)
+
+        r2 = make_request(
+            self.other_applicant,
+            "Нужна помощь на оплату лекарств",
+            "Одинаковый текст для проверки same-ip сигнала",
+            ip_hash=shared_ip_hash,
+        )
+        d2 = evaluate_request(r2)
+
+        self.assertEqual(d2.action, FraudAction.MANUAL_REVIEW, d2.reasons)
+        codes = {x.get("code") for x in d2.reasons}
+        self.assertIn("IP_SHARED_ACROSS_ACCOUNTS", codes)
+        self.assertIn("SAME_IP_EXACT_DUPLICATE_CROSS_ACCOUNT", codes)

@@ -13,8 +13,18 @@ class FraudCheckAdmin(admin.ModelAdmin):
 
 @admin.register(FraudDecision)
 class FraudDecisionAdmin(admin.ModelAdmin):
-    list_display = ("id", "aid_request", "score", "risk_level", "action", "engine_version", "decided_at")
-    list_filter = ("risk_level", "action", "engine_version", "decided_at")
+    list_display = (
+        "id",
+        "aid_request",
+        "score",
+        "risk_level",
+        "base_action",
+        "action",
+        "is_overridden",
+        "engine_version",
+        "decided_at",
+    )
+    list_filter = ("risk_level", "base_action", "action", "is_overridden", "engine_version", "decided_at")
     search_fields = ("aid_request__id",)
     ordering = ("-decided_at",)
 
@@ -32,4 +42,3 @@ class FraudOverrideAdmin(admin.ModelAdmin):
     list_filter = ("old_action", "new_action", "created_at")
     search_fields = ("aid_request__id", "changed_by__username")
     ordering = ("-created_at",)
-

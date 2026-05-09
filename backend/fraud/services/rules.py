@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from decimal import Decimal, InvalidOperation
 from datetime import timedelta
 from typing import Any
 
@@ -19,6 +20,17 @@ class Signal:
 
 def _norm_text(value: str) -> str:
     return " ".join((value or "").strip().lower().split())
+
+
+def _to_decimal(value: Any) -> Decimal:
+    if value in (None, ""):
+        return Decimal("0")
+    if isinstance(value, Decimal):
+        return value
+    try:
+        return Decimal(str(value))
+    except (InvalidOperation, ValueError, TypeError):
+        return Decimal("0")
 
 
 _digit_re = re.compile(r"\d+")
@@ -66,6 +78,268 @@ def rule_burst_creation(aid_request: AidRequest) -> list[Signal]:
             code="BURST_CREATION",
             weight=weight,
             details={"count_last_30m": cnt, "buckets": {"3+": 20, "5+": 35, "8+": 55}},
+        )
+    ]
+
+
+def rule_high_requested_amount(aid_request: AidRequest) -> list[Signal]:
+    """
+    Высокие суммы не блокируем автоматически, но отправляем в review.
+    Для платформы адресной помощи это важный финансовый риск-сигнал.
+    """
+    amount = _to_decimal(aid_request.requested_amount)
+
+    if amount >= Decimal("50000"):
+        weight = 45
+    elif amount >= Decimal("20000"):
+        weight = 30
+    elif amount >= Decimal("10000"):
+        weight = 15
+    else:
+        return []
+
+    return [
+        Signal(
+            code="HIGH_REQUESTED_AMOUNT",
+            weight=weight,
+            details={
+                "requested_amount": str(amount),
+                "thresholds": {"10000+": 15, "20000+": 30, "50000+": 45},
+            },
+        )
+    ]
+
+
+def rule_extreme_urgency(aid_request: AidRequest) -> list[Signal]:
+    """
+    Срочность сама по себе не должна сильно штрафовать,
+    но в связке с другими сигналами помогает быстрее вывести кейс в review.
+    """
+    urgency = aid_request.urgency or 0
+
+    if urgency >= 5:
+        return [
+            Signal(
+                code="EXTREME_URGENCY",
+                weight=10,
+                details={"urgency": urgency},
+            )
+        ]
+    return []
+
+
+def rule_amount_urgency_combo(aid_request: AidRequest) -> list[Signal]:
+    """
+    Комбинация "высокая сумма + максимальная срочность" —
+    типичный кандидат на ручную проверку.
+    """
+    amount = _to_decimal(aid_request.requested_amount)
+    urgency = aid_request.urgency or 0
+
+    if amount >= Decimal("20000") and urgency >= 5:
+        return [
+            Signal(
+                code="AMOUNT_URGENCY_COMBO",
+                weight=15,
+                details={
+                    "requested_amount": str(amount),
+                    "urgency": urgency,
+                },
+            )
+        ]
+    return []
+
+
+def rule_device_shared_across_accounts(aid_request: AidRequest) -> list[Signal]:
+    """
+    Один и тот же device_id у нескольких аккаунтов — не приговор,
+    но сильный сигнал к ручной проверке.
+    """
+    if not aid_request.device_id_hash:
+        return []
+
+    applicant_ids = list(
+        AidRequest.objects.filter(device_id_hash=aid_request.device_id_hash)
+        .order_by()
+        .values_list("applicant_id", flat=True)
+        .distinct()
+    )
+    accounts_count = len(applicant_ids)
+
+    if accounts_count >= 3:
+        weight = 30
+    elif accounts_count >= 2:
+        weight = 15
+    else:
+        return []
+
+    return [
+        Signal(
+            code="DEVICE_SHARED_ACROSS_ACCOUNTS",
+            weight=weight,
+            details={
+                "accounts_count": accounts_count,
+                "applicant_ids": applicant_ids[:10],
+            },
+        )
+    ]
+
+
+def rule_same_device_exact_duplicate_cross_account(aid_request: AidRequest) -> list[Signal]:
+    """
+    Точный дубль текста с того же device_id, но от другого аккаунта —
+    один из самых полезных мультиаккаунтных сигналов.
+    """
+    if not aid_request.device_id_hash:
+        return []
+
+    title_norm = _norm_text(aid_request.title)
+    desc_norm = _norm_text(aid_request.description)
+    if not title_norm and not desc_norm:
+        return []
+
+    candidates = AidRequest.objects.filter(
+        device_id_hash=aid_request.device_id_hash,
+    ).exclude(
+        id=aid_request.id,
+    ).exclude(
+        applicant=aid_request.applicant,
+    ).only("id", "title", "description", "applicant_id")[:200]
+
+    matched = []
+    for candidate in candidates:
+        if _norm_text(candidate.title) == title_norm and _norm_text(candidate.description) == desc_norm:
+            matched.append({"id": candidate.id, "applicant_id": candidate.applicant_id})
+
+    if not matched:
+        return []
+
+    return [
+        Signal(
+            code="SAME_DEVICE_EXACT_DUPLICATE_CROSS_ACCOUNT",
+            weight=35,
+            details={
+                "matches_count": len(matched),
+                "matched_requests": matched[:20],
+            },
+        )
+    ]
+
+
+def rule_device_linked_to_rejected_other_account(aid_request: AidRequest) -> list[Signal]:
+    """
+    Если device уже участвовал в отклоненных кейсах другого аккаунта,
+    это повышает риск, но не должно автоматически блокировать.
+    """
+    if not aid_request.device_id_hash:
+        return []
+
+    rejected_qs = AidRequest.objects.filter(
+        device_id_hash=aid_request.device_id_hash,
+        status=RequestStatus.REJECTED,
+    ).exclude(applicant=aid_request.applicant)
+
+    rejected_count = rejected_qs.count()
+    if rejected_count == 0:
+        return []
+
+    weight = 20 if rejected_count >= 2 else 10
+    return [
+        Signal(
+            code="DEVICE_LINKED_TO_REJECTED_OTHER_ACCOUNT",
+            weight=weight,
+            details={
+                "rejected_count": rejected_count,
+                "request_ids": list(rejected_qs.values_list("id", flat=True)[:20]),
+            },
+        )
+    ]
+
+
+def rule_ip_shared_across_accounts_recent(aid_request: AidRequest) -> list[Signal]:
+    """
+    Общий IP между аккаунтами — очень шумный сигнал, поэтому:
+    - смотрим только короткое окно
+    - даём мягкий вес
+    - используем как контекст, а не как повод для block
+    """
+    if not aid_request.ip_hash:
+        return []
+
+    window_hours = 24
+    since = timezone.now() - timedelta(hours=window_hours)
+    applicant_ids = list(
+        AidRequest.objects.filter(
+            ip_hash=aid_request.ip_hash,
+            created_at__gte=since,
+        )
+        .order_by()
+        .values_list("applicant_id", flat=True)
+        .distinct()
+    )
+    accounts_count = len(applicant_ids)
+
+    if accounts_count >= 5:
+        weight = 6
+    elif accounts_count >= 2:
+        weight = 3
+    else:
+        return []
+
+    return [
+        Signal(
+            code="IP_SHARED_ACROSS_ACCOUNTS",
+            weight=weight,
+            details={
+                "accounts_count": accounts_count,
+                "applicant_ids": applicant_ids[:10],
+                "window_hours": window_hours,
+            },
+        )
+    ]
+
+
+def rule_same_ip_exact_duplicate_cross_account_recent(aid_request: AidRequest) -> list[Signal]:
+    """
+    Один и тот же IP + точный дубль текста + другой аккаунт в коротком окне.
+    Более полезный сигнал, чем просто shared IP, но всё ещё только manual review.
+    """
+    if not aid_request.ip_hash:
+        return []
+
+    title_norm = _norm_text(aid_request.title)
+    desc_norm = _norm_text(aid_request.description)
+    if not title_norm and not desc_norm:
+        return []
+
+    window_hours = 24
+    since = timezone.now() - timedelta(hours=window_hours)
+    candidates = AidRequest.objects.filter(
+        ip_hash=aid_request.ip_hash,
+        created_at__gte=since,
+    ).exclude(
+        id=aid_request.id,
+    ).exclude(
+        applicant=aid_request.applicant,
+    ).only("id", "title", "description", "applicant_id")[:200]
+
+    matched = []
+    for candidate in candidates:
+        if _norm_text(candidate.title) == title_norm and _norm_text(candidate.description) == desc_norm:
+            matched.append({"id": candidate.id, "applicant_id": candidate.applicant_id})
+
+    if not matched:
+        return []
+
+    return [
+        Signal(
+            code="SAME_IP_EXACT_DUPLICATE_CROSS_ACCOUNT",
+            weight=22,
+            details={
+                "matches_count": len(matched),
+                "matched_requests": matched[:20],
+                "window_hours": window_hours,
+            },
         )
     ]
 
@@ -244,6 +518,14 @@ def collect_signals(aid_request: AidRequest) -> list[Signal]:
 
     # Частота — всегда отдельно
     signals.extend(rule_burst_creation(aid_request))
+    signals.extend(rule_high_requested_amount(aid_request))
+    signals.extend(rule_extreme_urgency(aid_request))
+    signals.extend(rule_amount_urgency_combo(aid_request))
+    signals.extend(rule_device_shared_across_accounts(aid_request))
+    signals.extend(rule_same_device_exact_duplicate_cross_account(aid_request))
+    signals.extend(rule_device_linked_to_rejected_other_account(aid_request))
+    signals.extend(rule_ip_shared_across_accounts_recent(aid_request))
+    signals.extend(rule_same_ip_exact_duplicate_cross_account_recent(aid_request))
 
     # Сначала самые сильные дубли
     exact = rule_exact_duplicate_same_author_recent(aid_request)

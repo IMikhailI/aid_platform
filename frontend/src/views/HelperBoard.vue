@@ -47,7 +47,7 @@ async function load() {
     if (category.value) params.category = category.value;
 
     const resp = await api.get("/api/requests/published/", { params });
-    items.value = resp.data;
+    items.value = resp.data?.results ?? resp.data ?? [];
   } catch (e) {
     error.value = e?.response?.data?.detail || "Failed to load";
   }
@@ -75,4 +75,3 @@ onMounted(load);
 .card { border: 1px solid #ddd; border-radius: 10px; padding: 12px; }
 .error { color: #b00020; }
 </style>
-

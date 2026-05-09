@@ -42,7 +42,9 @@ class FraudRecheckAndFilterTests(APITestCase):
             aid_request=self.req,
             score=60,
             risk_level="high",
+            base_action=FraudAction.MANUAL_REVIEW,
             action=FraudAction.MANUAL_REVIEW,
+            is_overridden=False,
             reasons=[{"code": "BURST_CREATION", "weight": 20}],
             engine_version="rules-v1",
         )
@@ -60,6 +62,7 @@ class FraudRecheckAndFilterTests(APITestCase):
             getattr(resp, "data", resp.content.decode()),
         )
         self.assertEqual(resp.data["score"], 60)
+        self.assertEqual(resp.data["base_action"], FraudAction.MANUAL_REVIEW)
 
     def test_non_moderator_forbidden(self):
         self.auth(self.helper)
@@ -87,6 +90,7 @@ class FraudRecheckAndFilterTests(APITestCase):
 
         self.decision.refresh_from_db()
         self.assertEqual(self.decision.action, FraudAction.ALLOW)
+        self.assertTrue(self.decision.is_overridden)
 
     def test_recheck_forbidden_for_non_moderator(self):
         self.auth(self.helper)
@@ -99,3 +103,18 @@ class FraudRecheckAndFilterTests(APITestCase):
         self.assertEqual(resp.status_code, status.HTTP_200_OK, getattr(resp, "data", resp.content.decode()))
         self.assertIn("score", resp.data)
         self.assertIn("action", resp.data)
+
+    def test_recheck_preserves_override_action(self):
+        self.auth(self.moderator)
+        override_resp = self.client.post(
+            f"/api/fraud/requests/{self.req.id}/override/",
+            {"new_action": FraudAction.BLOCK, "comment": "Keep block after recheck"},
+            format="json",
+        )
+        self.assertEqual(override_resp.status_code, status.HTTP_201_CREATED, getattr(override_resp, "data", override_resp.content.decode()))
+
+        resp = self.client.post(f"/api/fraud/requests/{self.req.id}/recheck/")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK, getattr(resp, "data", resp.content.decode()))
+        self.assertEqual(resp.data["base_action"], FraudAction.ALLOW)
+        self.assertEqual(resp.data["action"], FraudAction.BLOCK)
+        self.assertTrue(resp.data["is_overridden"])

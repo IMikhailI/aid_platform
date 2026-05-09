@@ -13,6 +13,13 @@ cd ~/aid_platform
 docker compose up --build
 ```
 
+Или через helper-скрипт:
+
+```bash
+cd ~/aid_platform
+./start_platform.sh
+```
+
 После запуска:
 
 - Backend: http://localhost:8000
@@ -27,6 +34,13 @@ docker compose up --build
 ```bash
 cd ~/aid_platform
 docker compose up -d --build
+```
+
+Или:
+
+```bash
+cd ~/aid_platform
+./start_platform.sh --logs
 ```
 
 Логи:
@@ -47,8 +61,7 @@ docker compose down
 
 ```bash
 cd ~/aid_platform
-docker compose run --rm backend python manage.py makemigrations
-docker compose run --rm backend python manage.py migrate
+docker compose exec -T backend python manage.py migrate
 ```
 
 ---
@@ -137,7 +150,7 @@ curl -X POST http://localhost:8000/api/requests/helper/take/1/ \
 
 ### 8.5 Helper закрывает заявку #1
 ```bash
-curl -X POST http://localhost:8000/api/requests/close/1/ \
+curl -X PATCH http://localhost:8000/api/requests/close/1/ \
   -H "Authorization: Bearer $HELPER_TOKEN"
 ```
 
@@ -154,6 +167,53 @@ curl http://localhost:8000/api/requests/1/history/ \
 Статус контейнеров:
 ```bash
 docker compose ps
+```
+
+Быстрый запуск с проверками:
+```bash
+./start_platform.sh
+```
+
+Запуск с сидированием тестовых пользователей:
+```bash
+./start_platform.sh --seed-users
+```
+
+Запуск с демо-данными под показ/диплом:
+```bash
+./start_platform.sh --seed-demo
+```
+
+Полный пересбор с удалением образов:
+```bash
+./start_platform.sh --clean-images
+```
+
+Полный сброс БД:
+```bash
+./start_platform.sh --reset-db
+```
+
+Smoke-проверка основного API flow:
+```bash
+./smoke_api.sh
+```
+
+Smoke-проверка негативных и fraud-сценариев:
+```bash
+./smoke_negative_fraud.sh
+```
+
+Проверка anti-fraud с очисткой заявок, unit-тестами и device-сценариями:
+```bash
+./antifraud_lab.sh
+```
+
+Важно: frontend теперь отправляет `X-Device-Id`, а backend хранит только salted hash этого значения, IP и `User-Agent`. Это нужно для поиска мультиаккаунтов и cross-account дублей, а не для получения "настоящего hardware id".
+
+Сидирование демо-данных:
+```bash
+./seed_demo.sh
 ```
 
 Перезапуск только backend:

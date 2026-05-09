@@ -48,7 +48,7 @@ def evaluate_request(aid_request: AidRequest, engine_version: str = "rules-v3") 
         for s in signals
     ]
     risk_level = _risk_level_from_score(score)
-    action = _action_from_level(risk_level)
+    base_action = _action_from_level(risk_level)
 
     # Чтобы не копить дубль-сигналы на каждый recheck, чистим предыдущий слепок
     FraudCheck.objects.filter(aid_request=aid_request).delete()
@@ -65,16 +65,47 @@ def evaluate_request(aid_request: AidRequest, engine_version: str = "rules-v3") 
     if checks_to_create:
         FraudCheck.objects.bulk_create(checks_to_create)
 
-    decision, _created = FraudDecision.objects.update_or_create(
+    decision, created = FraudDecision.objects.get_or_create(
         aid_request=aid_request,
         defaults={
             "score": score,
             "risk_level": risk_level,
-            "action": action,
+            "action": base_action,
+            "base_action": base_action,
+            "is_overridden": False,
             "reasons": reasons,
             "engine_version": engine_version,
         },
     )
+
+    if not created:
+        decision.score = score
+        decision.risk_level = risk_level
+        decision.base_action = base_action
+        decision.reasons = reasons
+        decision.engine_version = engine_version
+        if not decision.is_overridden:
+            decision.action = base_action
+        decision.save(
+            update_fields=[
+                "score",
+                "risk_level",
+                "base_action",
+                "action",
+                "reasons",
+                "engine_version",
+                "decided_at",
+            ]
+            if not decision.is_overridden
+            else [
+                "score",
+                "risk_level",
+                "base_action",
+                "reasons",
+                "engine_version",
+                "decided_at",
+            ]
+        )
 
     # Синхронизация denormalized полей в заявке
     aid_request.risk_score = score
@@ -108,4 +139,3 @@ def evaluate_request_safe(aid_request: AidRequest, engine_version: str = "rules-
         aid_request.status = RequestStatus.ON_MODERATION
         aid_request.save(update_fields=["is_flagged", "risk_score", "status"])
         return None
-

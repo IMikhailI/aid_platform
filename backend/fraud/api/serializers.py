@@ -15,7 +15,9 @@ class FraudDecisionSerializer(serializers.ModelSerializer):
             "id",
             "score",
             "risk_level",
+            "base_action",
             "action",
+            "is_overridden",
             "reasons",
             "engine_version",
             "decided_at",
@@ -42,4 +44,3 @@ class FraudOverrideSerializer(serializers.ModelSerializer):
 class FraudOverrideCreateSerializer(serializers.Serializer):
     new_action = serializers.ChoiceField(choices=FraudAction.choices)
     comment = serializers.CharField()
-

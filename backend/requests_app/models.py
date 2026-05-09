@@ -40,6 +40,9 @@ class AidRequest(models.Model):
     )
     is_flagged = models.BooleanField(default=False)
     risk_score = models.PositiveIntegerField(default=0)
+    device_id_hash = models.CharField(max_length=64, blank=True, default="", db_index=True)
+    ip_hash = models.CharField(max_length=64, blank=True, default="", db_index=True)
+    user_agent_hash = models.CharField(max_length=64, blank=True, default="")
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -86,4 +89,3 @@ class HelpCommitment(models.Model):
     )
     note = models.CharField(max_length=255, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
-

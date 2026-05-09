@@ -1,5 +1,6 @@
 import axios from "axios";
 import { clearAuth, getAccessToken, getRefreshToken, setAuth, getRole, getUsername } from "./auth";
+import { getOrCreateDeviceId } from "./device";
 
 const api = axios.create({
   baseURL: "http://localhost:8000",
@@ -9,9 +10,11 @@ const api = axios.create({
 // Подставляем access token в каждый запрос
 api.interceptors.request.use((config) => {
   const token = getAccessToken();
+  config.headers = config.headers || {};
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  config.headers["X-Device-Id"] = getOrCreateDeviceId();
   return config;
 });
 
@@ -81,4 +84,3 @@ api.interceptors.response.use(
 );
 
 export default api;
-

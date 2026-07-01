@@ -9,10 +9,9 @@ class AidRequestCreateSerializer(serializers.ModelSerializer):
         model = AidRequest
         fields = (
             "id", "category", "title", "description", "region",
-            "requested_amount", "urgency", "status", "risk_score", "is_flagged",
-            "created_at"
+            "requested_amount", "urgency", "status", "created_at", "updated_at",
         )
-        read_only_fields = ("id", "status", "risk_score", "is_flagged", "created_at")
+        read_only_fields = ("id", "status", "created_at", "updated_at")
 
     def create(self, validated_data):
         user = self.context["request"].user
@@ -35,7 +34,27 @@ class AidRequestCreateSerializer(serializers.ModelSerializer):
         return obj
 
 
-class AidRequestListSerializer(serializers.ModelSerializer):
+class ApplicantAidRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AidRequest
+        fields = (
+            "id", "category", "title", "description", "region",
+            "requested_amount", "urgency", "status", "created_at", "updated_at",
+        )
+        read_only_fields = fields
+
+
+class HelperAidRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AidRequest
+        fields = (
+            "id", "title", "category", "region", "requested_amount", "urgency",
+            "status", "created_at",
+        )
+        read_only_fields = fields
+
+
+class ModeratorAidRequestSerializer(serializers.ModelSerializer):
     applicant_username = serializers.CharField(source="applicant.username", read_only=True)
 
     class Meta:
@@ -44,6 +63,7 @@ class AidRequestListSerializer(serializers.ModelSerializer):
             "id", "title", "category", "region", "requested_amount", "urgency",
             "status", "risk_score", "is_flagged", "applicant_username", "created_at"
         )
+        read_only_fields = fields
 
 
 class ModerationActionSerializer(serializers.Serializer):
@@ -55,7 +75,30 @@ class HelpCommitSerializer(serializers.Serializer):
     method = serializers.ChoiceField(choices=["certificate", "cart", "invoice", "mock"])
     note = serializers.CharField(required=False, allow_blank=True, default="")
 
-class RequestStatusHistorySerializer(serializers.ModelSerializer):
+
+class ApplicantRequestStatusHistorySerializer(serializers.ModelSerializer):
+    from_status = serializers.CharField(source="old_status", read_only=True)
+    to_status = serializers.CharField(source="new_status", read_only=True)
+    changed_at = serializers.DateTimeField(source="created_at", read_only=True)
+
+    class Meta:
+        model = RequestStatusHistory
+        fields = ("from_status", "to_status", "changed_at")
+        read_only_fields = fields
+
+
+class HelperRequestStatusHistorySerializer(serializers.ModelSerializer):
+    from_status = serializers.CharField(source="old_status", read_only=True)
+    to_status = serializers.CharField(source="new_status", read_only=True)
+    changed_at = serializers.DateTimeField(source="created_at", read_only=True)
+
+    class Meta:
+        model = RequestStatusHistory
+        fields = ("from_status", "to_status", "changed_at")
+        read_only_fields = fields
+
+
+class ModeratorRequestStatusHistorySerializer(serializers.ModelSerializer):
     from_status = serializers.CharField(source="old_status", read_only=True)
     to_status = serializers.CharField(source="new_status", read_only=True)
     changed_at = serializers.DateTimeField(source="created_at", read_only=True)
@@ -75,3 +118,12 @@ class RequestStatusHistorySerializer(serializers.ModelSerializer):
             "changed_by_role",
         ]
         read_only_fields = fields
+
+
+class StatusTransitionResponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    new_status = serializers.CharField(read_only=True)
+
+
+class DetailResponseSerializer(serializers.Serializer):
+    detail = serializers.CharField(read_only=True)

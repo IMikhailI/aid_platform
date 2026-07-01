@@ -12,15 +12,21 @@ from .models import AidRequest, RequestStatus, RequestStatusHistory, HelpCommitm
 from .permissions import IsApplicant, IsModerator, IsHelper, CanCloseRequest
 from .serializers import (
     AidRequestCreateSerializer,
-    AidRequestListSerializer,
+    ApplicantAidRequestSerializer,
+    HelperAidRequestSerializer,
+    ModeratorAidRequestSerializer,
     ModerationActionSerializer,
     HelpCommitSerializer,
-    RequestStatusHistorySerializer,
+    ApplicantRequestStatusHistorySerializer,
+    HelperRequestStatusHistorySerializer,
+    ModeratorRequestStatusHistorySerializer,
+    StatusTransitionResponseSerializer,
+    DetailResponseSerializer,
 )
 from fraud.services.engine import evaluate_request_safe
 from fraud.services.device import extract_request_telemetry
 from fraud.models import FraudAction
-from drf_spectacular.utils import extend_schema, OpenApiResponse
+from drf_spectacular.utils import extend_schema, OpenApiResponse, PolymorphicProxySerializer
 
 class DefaultPagePagination(PageNumberPagination):
     page_size = 10
@@ -70,21 +76,22 @@ class ApplicantCreateRequestView(generics.CreateAPIView):
 
 
 class ApplicantOwnRequestsView(generics.ListAPIView):
-    serializer_class = AidRequestListSerializer
+    queryset = AidRequest.objects.none()
+    serializer_class = ApplicantAidRequestSerializer
     permission_classes = [permissions.IsAuthenticated, IsApplicant]
 
     def get_queryset(self):
         return AidRequest.objects.filter(applicant=self.request.user)
 
 class PublicPublishedRequestsView(generics.ListAPIView):
-    serializer_class = AidRequestListSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = HelperAidRequestSerializer
+    permission_classes = [permissions.IsAuthenticated, IsHelper]
     pagination_class = DefaultPagePagination
 
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ["category"]  # region лучше через кастом, чтобы iexact
-    search_fields = ["title", "description", "region"]
-    ordering_fields = ["created_at", "risk_score"]
+    search_fields = ["title", "region"]
+    ordering_fields = ["created_at", "requested_amount", "urgency"]
     ordering = ["-created_at"]
 
     def get_queryset(self):
@@ -98,7 +105,7 @@ class PublicPublishedRequestsView(generics.ListAPIView):
         return qs
 
 class ModerationQueueView(generics.ListAPIView):
-    serializer_class = AidRequestListSerializer
+    serializer_class = ModeratorAidRequestSerializer
     permission_classes = [permissions.IsAuthenticated, IsModerator]
     pagination_class = DefaultPagePagination
 
@@ -151,7 +158,7 @@ class ModerateRequestView(APIView):
     @extend_schema(
         request=ModerationActionSerializer,
         responses={
-            200: OpenApiResponse(description="Заявка обработана"),
+            200: StatusTransitionResponseSerializer,
             400: OpenApiResponse(description="Ошибка валидации"),
             403: OpenApiResponse(description="Недостаточно прав"),
             404: OpenApiResponse(description="Заявка не найдена"),
@@ -199,7 +206,7 @@ class TakeRequestIntoWorkView(APIView):
     @extend_schema(
         request=HelpCommitSerializer,
         responses={
-            200: OpenApiResponse(description="Заявка взята в работу"),
+            200: HelperAidRequestSerializer,
             400: OpenApiResponse(description="Ошибка валидации"),
             403: OpenApiResponse(description="Недостаточно прав"),
             404: OpenApiResponse(description="Заявка не найдена"),
@@ -241,21 +248,22 @@ class TakeRequestIntoWorkView(APIView):
             changed_by=request.user,
             comment="Заявка взята в работу",
         )
-        return Response({"id": obj.id, "new_status": obj.status}, status=200)
+        return Response(HelperAidRequestSerializer(obj).data, status=200)
 
-@extend_schema(
-    summary="Закрыть заявку",
-    description="Закрывает заявку в статусе in_progress. Доступно admin или helper, который взял заявку в работу.",
-    responses={
-        200: OpenApiResponse(description="Заявка успешно закрыта"),
-        400: OpenApiResponse(description="Нельзя закрыть заявку в текущем статусе"),
-        403: OpenApiResponse(description="Недостаточно прав"),
-        404: OpenApiResponse(description="Заявка не найдена"),
-    },
-)
 class CloseRequestView(APIView):
     permission_classes = [IsAuthenticated, CanCloseRequest]
 
+    @extend_schema(
+        request=None,
+        summary="Закрыть заявку",
+        description="Закрывает заявку в статусе in_progress. Доступно admin или helper, который взял заявку в работу.",
+        responses={
+            200: DetailResponseSerializer,
+            400: OpenApiResponse(description="Нельзя закрыть заявку в текущем статусе"),
+            403: OpenApiResponse(description="Недостаточно прав"),
+            404: OpenApiResponse(description="Заявка не найдена"),
+        },
+    )
     @transaction.atomic
     def patch(self, request, request_id):
         aid_request = get_object_or_404(
@@ -303,6 +311,19 @@ class CloseRequestView(APIView):
 class RequestHistoryView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        responses=PolymorphicProxySerializer(
+            component_name="RequestHistoryByRole",
+            serializers=[
+                ApplicantRequestStatusHistorySerializer,
+                HelperRequestStatusHistorySerializer,
+                ModeratorRequestStatusHistorySerializer,
+            ],
+            resource_type_field_name=None,
+            many=True,
+        ),
+        summary="История статусов заявки",
+    )
     def get(self, request, request_id):
         aid_request = get_object_or_404(AidRequest, id=request_id)
 
@@ -325,5 +346,12 @@ class RequestHistoryView(APIView):
                 return Response({"detail": "Forbidden."}, status=status.HTTP_403_FORBIDDEN)
 
         qs = RequestStatusHistory.objects.filter(aid_request=aid_request).select_related("changed_by").order_by("-created_at")
-        serializer = RequestStatusHistorySerializer(qs, many=True)
+        if request.user.role in ("admin", "moderator"):
+            serializer_class = ModeratorRequestStatusHistorySerializer
+        elif request.user.role == "applicant":
+            serializer_class = ApplicantRequestStatusHistorySerializer
+        else:
+            serializer_class = HelperRequestStatusHistorySerializer
+
+        serializer = serializer_class(qs, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)

@@ -10,6 +10,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 
 from .models import AidRequest, RequestStatus, RequestStatusHistory, HelpCommitment
 from .permissions import IsApplicant, IsModerator, IsHelper, CanCloseRequest
+from .services.transitions import InvalidRequestTransition, transition_request
 from .serializers import (
     AidRequestCreateSerializer,
     ApplicantAidRequestSerializer,
@@ -25,7 +26,6 @@ from .serializers import (
 )
 from fraud.services.engine import evaluate_request_safe
 from fraud.services.device import extract_request_telemetry
-from fraud.models import FraudAction
 from drf_spectacular.utils import extend_schema, OpenApiResponse, PolymorphicProxySerializer
 
 class DefaultPagePagination(PageNumberPagination):
@@ -47,32 +47,8 @@ class ApplicantCreateRequestView(generics.CreateAPIView):
         obj.user_agent_hash = telemetry["user_agent_hash"]
         obj.save(update_fields=["device_id_hash", "ip_hash", "user_agent_hash", "updated_at"])
 
-        # 2) Запускаем антифрод (safe wrapper)
-        decision = evaluate_request_safe(obj)
-
-        # 3) Политика fail-closed для block:
-        # если anti-fraud выдал block -> не даём двигаться дальше автоматически
-        # (статус уже on_moderation по твоему lifecycle)
-        if decision and decision.action == FraudAction.BLOCK:
-            if obj.status != RequestStatus.ON_MODERATION:
-                obj.status = RequestStatus.ON_MODERATION
-                obj.save(update_fields=["status", "updated_at"])
-
-        # 4) Гарантируем запись в историю при создании
-        # если уже есть история "-> on_moderation", дубль не пишем
-        has_initial = RequestStatusHistory.objects.filter(
-            aid_request=obj,
-            new_status=RequestStatus.ON_MODERATION
-        ).exists()
-
-        if not has_initial:
-            RequestStatusHistory.objects.create(
-                aid_request=obj,
-                old_status="",
-                new_status=RequestStatus.ON_MODERATION,
-                changed_by=self.request.user,
-                comment="Заявка создана и отправлена на модерацию",
-            )
+        # 2) Антифрод обновляет только fraud-метаданные, не lifecycle status.
+        evaluate_request_safe(obj)
 
 
 class ApplicantOwnRequestsView(generics.ListAPIView):
@@ -171,32 +147,26 @@ class ModerateRequestView(APIView):
         serializer = ModerationActionSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        try:
-            obj = AidRequest.objects.select_for_update().get(id=request_id)
-        except AidRequest.DoesNotExist:
-            return Response({"detail": "Заявка не найдена"}, status=404)
-
-        if obj.status != RequestStatus.ON_MODERATION:
-            return Response({"detail": "Заявка не в статусе модерации"}, status=400)
-
-        old = obj.status
         action = serializer.validated_data["action"]
         comment = serializer.validated_data.get("comment", "")
+        target_status = RequestStatus.PUBLISHED if action == "approve" else RequestStatus.REJECTED
 
-        if action == "approve":
-            obj.status = RequestStatus.PUBLISHED
-        else:
-            obj.status = RequestStatus.REJECTED
+        try:
+            result = transition_request(
+                request_id=request_id,
+                target_status=target_status,
+                actor=request.user,
+                comment=comment,
+            )
+        except AidRequest.DoesNotExist:
+            return Response({"detail": "Заявка не найдена"}, status=404)
+        except InvalidRequestTransition:
+            return Response({"detail": "Недопустимый переход статуса заявки."}, status=400)
 
-        obj.save(update_fields=["status", "updated_at"])
+        if not result.changed:
+            return Response({"detail": "Заявка уже находится в целевом статусе."}, status=400)
 
-        RequestStatusHistory.objects.create(
-            aid_request=obj,
-            old_status=old,
-            new_status=obj.status,
-            changed_by=request.user,
-            comment=comment,
-        )
+        obj = result.aid_request
         return Response({"id": obj.id, "new_status": obj.status}, status=200)
 
 
@@ -224,30 +194,30 @@ class TakeRequestIntoWorkView(APIView):
         except AidRequest.DoesNotExist:
             return Response({"detail": "Заявка не найдена"}, status=404)
 
-        if obj.status != RequestStatus.PUBLISHED:
-            return Response({"detail": "Можно взять только опубликованную заявку"}, status=400)
-
         if hasattr(obj, "commitment"):
             return Response({"detail": "Заявка уже взята в работу"}, status=400)
 
+        try:
+            result = transition_request(
+                request_id=obj.id,
+                target_status=RequestStatus.IN_PROGRESS,
+                actor=request.user,
+                comment="Заявка взята в работу",
+            )
+        except InvalidRequestTransition:
+            return Response({"detail": "Недопустимый переход статуса заявки."}, status=400)
+
+        if not result.changed:
+            return Response({"detail": "Заявка уже находится в работе."}, status=400)
+
         HelpCommitment.objects.create(
-            aid_request=obj,
+            aid_request=result.aid_request,
             helper=request.user,
             method=serializer.validated_data["method"],
             note=serializer.validated_data.get("note", ""),
         )
 
-        old = obj.status
-        obj.status = RequestStatus.IN_PROGRESS
-        obj.save(update_fields=["status", "updated_at"])
-
-        RequestStatusHistory.objects.create(
-            aid_request=obj,
-            old_status=old,
-            new_status=obj.status,
-            changed_by=request.user,
-            comment="Заявка взята в работу",
-        )
+        obj = result.aid_request
         return Response(HelperAidRequestSerializer(obj).data, status=200)
 
 class CloseRequestView(APIView):
@@ -271,14 +241,7 @@ class CloseRequestView(APIView):
             id=request_id
         )
 
-        # 1) Проверка допустимого текущего статуса
-        if aid_request.status != RequestStatus.IN_PROGRESS:
-            return Response(
-                {"detail": "Only in_progress requests can be closed."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        # 2) helper — может закрыть только свою взятую заявку
+        # helper — может закрыть только свою взятую заявку
         if request.user.role == "helper":
             has_commitment = HelpCommitment.objects.filter(
                 aid_request=aid_request,
@@ -290,18 +253,24 @@ class CloseRequestView(APIView):
                     status=status.HTTP_403_FORBIDDEN
                 )
 
-        # 3) Закрытие
-        aid_request.status = RequestStatus.CLOSED
-        aid_request.save(update_fields=["status"])
+        try:
+            result = transition_request(
+                request_id=aid_request.id,
+                target_status=RequestStatus.CLOSED,
+                actor=request.user,
+                comment="Заявка закрыта",
+            )
+        except InvalidRequestTransition:
+            return Response(
+                {"detail": "Недопустимый переход статуса заявки."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-        RequestStatusHistory.objects.create(
-            aid_request=aid_request,
-            old_status=RequestStatus.IN_PROGRESS,
-            new_status=RequestStatus.CLOSED,
-            changed_by=request.user,
-            comment="Заявка закрыта",
-        )
-
+        if not result.changed:
+            return Response(
+                {"detail": "Заявка уже закрыта."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         return Response(
             {"detail": "Request closed successfully."},

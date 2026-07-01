@@ -6,7 +6,7 @@ from typing import Any
 
 from django.db import transaction
 
-from requests_app.models import AidRequest, RequestStatus
+from requests_app.models import AidRequest
 from fraud.models import FraudAction, FraudCheck, FraudDecision, FraudRiskLevel
 from fraud.services.rules import Signal, collect_signals
 
@@ -111,13 +111,7 @@ def evaluate_request(aid_request: AidRequest, engine_version: str = "rules-v3") 
     aid_request.risk_score = score
     aid_request.is_flagged = risk_level in (FraudRiskLevel.HIGH, FraudRiskLevel.CRITICAL)
 
-    # Policy v1:
-    # high/critical => только ручная модерация (on_moderation)
-    # Здесь ничего не "публикуем" автоматически.
-    if aid_request.status != RequestStatus.ON_MODERATION:
-        aid_request.status = RequestStatus.ON_MODERATION
-
-    aid_request.save(update_fields=["risk_score", "is_flagged", "status"])
+    aid_request.save(update_fields=["risk_score", "is_flagged"])
 
     return decision
 
@@ -133,9 +127,8 @@ def evaluate_request_safe(aid_request: AidRequest, engine_version: str = "rules-
     except Exception:
         logger.exception("Fraud evaluation failed for request_id=%s", aid_request.id)
 
-        # Fail-safe режим: ручная модерация + flagged
+        # Fail-safe режим: помечаем риск, не изменяя lifecycle status.
         aid_request.is_flagged = True
         aid_request.risk_score = max(aid_request.risk_score or 0, 50)
-        aid_request.status = RequestStatus.ON_MODERATION
-        aid_request.save(update_fields=["is_flagged", "risk_score", "status"])
+        aid_request.save(update_fields=["is_flagged", "risk_score"])
         return None

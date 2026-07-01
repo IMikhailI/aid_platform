@@ -4,12 +4,16 @@ from .models import AidRequest, RequestStatusHistory, HelpCommitment
 
 @admin.register(AidRequest)
 class AidRequestAdmin(admin.ModelAdmin):
+    readonly_fields = ("status",)
     list_display = (
         "id", "title", "category", "region", "status",
         "risk_score", "is_flagged", "applicant", "created_at"
     )
     list_filter = ("status", "category", "region", "is_flagged")
     search_fields = ("title", "description", "region", "applicant__username")
+
+    def has_add_permission(self, request):
+        return False
 
 
 @admin.register(RequestStatusHistory)
@@ -22,4 +26,3 @@ class RequestStatusHistoryAdmin(admin.ModelAdmin):
 class HelpCommitmentAdmin(admin.ModelAdmin):
     list_display = ("id", "aid_request", "helper", "method", "created_at")
     list_filter = ("method",)
-

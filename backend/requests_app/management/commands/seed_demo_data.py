@@ -8,7 +8,8 @@ from django.db import transaction
 
 from fraud.models import FraudAction, FraudOverride
 from fraud.services.engine import evaluate_request_safe
-from requests_app.models import AidRequest, HelpCommitment, RequestCategory, RequestStatus, RequestStatusHistory
+from requests_app.models import AidRequest, HelpCommitment, RequestCategory, RequestStatus
+from requests_app.services.transitions import transition_request
 from users.models import UserRole
 
 
@@ -99,28 +100,22 @@ class Command(BaseCommand):
             region=region,
             requested_amount=amount,
             urgency=urgency,
-            status=RequestStatus.ON_MODERATION,
+            status=RequestStatus.DRAFT,
         )
-        RequestStatusHistory.objects.create(
-            aid_request=request_obj,
-            old_status="",
-            new_status=RequestStatus.ON_MODERATION,
-            changed_by=applicant,
+        return transition_request(
+            request_id=request_obj.id,
+            target_status=RequestStatus.ON_MODERATION,
+            actor=applicant,
             comment="Seeded request created",
-        )
-        return request_obj
+        ).aid_request
 
     def _transition(self, request_obj, *, new_status: str, changed_by, comment: str):
-        old_status = request_obj.status
-        request_obj.status = new_status
-        request_obj.save(update_fields=["status", "updated_at"])
-        RequestStatusHistory.objects.create(
-            aid_request=request_obj,
-            old_status=old_status,
-            new_status=new_status,
-            changed_by=changed_by,
+        return transition_request(
+            request_id=request_obj.id,
+            target_status=new_status,
+            actor=changed_by,
             comment=comment,
-        )
+        ).aid_request
 
     def _seed_core_flow(self, *, applicant_demo, applicant_story, helper_demo, moderator_demo):
         published_request = self._create_request(

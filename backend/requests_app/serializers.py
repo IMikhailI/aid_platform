@@ -1,5 +1,8 @@
+from django.db import transaction
 from rest_framework import serializers
+
 from .models import AidRequest, RequestStatusHistory, HelpCommitment, RequestStatus
+from .services.transitions import transition_request
 
 
 class AidRequestCreateSerializer(serializers.ModelSerializer):
@@ -13,25 +16,24 @@ class AidRequestCreateSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ("id", "status", "created_at", "updated_at")
 
+    @transaction.atomic
     def create(self, validated_data):
         user = self.context["request"].user
 
         obj = AidRequest.objects.create(
             applicant=user,
-            status=RequestStatus.ON_MODERATION,
+            status=RequestStatus.DRAFT,
             risk_score=0,
             is_flagged=False,
             **validated_data
         )
-
-        RequestStatusHistory.objects.create(
-            aid_request=obj,
-            old_status="",
-            new_status=obj.status,
-            changed_by=user,
-            comment="Заявка создана"
+        result = transition_request(
+            request_id=obj.id,
+            target_status=RequestStatus.ON_MODERATION,
+            actor=user,
+            comment="Заявка создана",
         )
-        return obj
+        return result.aid_request
 
 
 class ApplicantAidRequestSerializer(serializers.ModelSerializer):

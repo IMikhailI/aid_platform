@@ -4,6 +4,7 @@ from rest_framework.test import APITestCase
 
 from fraud.models import FraudAction, FraudCheck, FraudDecision
 from requests_app.models import AidRequest, HelpCommitment, RequestStatus, RequestStatusHistory
+from requests_app.services.transitions import transition_request
 
 
 User = get_user_model()
@@ -196,8 +197,12 @@ class PrivacyApiContractTests(APITestCase):
         self.assertEqual(foreign_response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_helper_close_response_is_safe(self):
-        self.published_request.status = RequestStatus.IN_PROGRESS
-        self.published_request.save(update_fields=["status"])
+        transition_request(
+            request_id=self.published_request.id,
+            target_status=RequestStatus.IN_PROGRESS,
+            actor=self.helper,
+            comment="Privacy test setup",
+        )
         HelpCommitment.objects.create(
             aid_request=self.published_request,
             helper=self.helper,

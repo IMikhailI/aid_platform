@@ -8,6 +8,7 @@ from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
 
 from requests_app.models import AidRequest, RequestStatus
+from requests_app.services.transitions import transition_request
 from fraud.services.engine import evaluate_request
 
 
@@ -29,15 +30,21 @@ def _field_default_value(model, field_name: str):
 
 
 def make_request(applicant, title: str, description: str, region="Berlin"):
-    return AidRequest.objects.create(
+    aid_request = AidRequest.objects.create(
         applicant=applicant,
         title=title,
         description=description,
         region=region,
         category=_field_default_value(AidRequest, "category"),
         urgency=_field_default_value(AidRequest, "urgency"),
-        status=RequestStatus.ON_MODERATION,
+        status=RequestStatus.DRAFT,
     )
+    return transition_request(
+        request_id=aid_request.id,
+        target_status=RequestStatus.ON_MODERATION,
+        actor=applicant,
+        comment="Anti-fraud smoke request created",
+    ).aid_request
 
 
 class Command(BaseCommand):

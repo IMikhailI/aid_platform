@@ -6,6 +6,43 @@
 
 ---
 
+## 1.1) Локальные переменные окружения
+
+Создай локальный `.env` из безопасного шаблона и замени значения `change-me`:
+
+```bash
+cp .env.example .env
+```
+
+Обязательные секреты: `DJANGO_SECRET_KEY` и `POSTGRES_PASSWORD`. Django также
+использует `DJANGO_DEBUG`, `DJANGO_ALLOWED_HOSTS`, `POSTGRES_DB`,
+`POSTGRES_USER`, `POSTGRES_HOST`, `POSTGRES_PORT` и
+`CORS_ALLOWED_ORIGINS`. Frontend получает адрес API из
+`VITE_API_BASE_URL` и локально использует `http://localhost:8000` по
+умолчанию. Django и Vite загружают переменные из корневого `.env`; переменные
+процесса имеют приоритет над файлом.
+
+Файлы `.env`, `.env.tokens` и Python-окружения не хранятся в Git. Не добавляй
+в `.env.example` реальные пароли, токены или ключи.
+
+Для запуска backend без Docker создай новое окружение и установи зависимости:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r backend/requirements.txt
+```
+
+Frontend dependencies устанавливаются воспроизводимо из lockfile:
+
+```bash
+cd frontend
+npm ci
+cd ..
+```
+
+---
+
 ## 2) Первый запуск (или после `git clone`)
 
 ```bash

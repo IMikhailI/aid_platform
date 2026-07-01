@@ -2,8 +2,10 @@ import axios from "axios";
 import { clearAuth, getAccessToken, getRefreshToken, setAuth, getRole, getUsername } from "./auth";
 import { getOrCreateDeviceId } from "./device";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+
 const api = axios.create({
-  baseURL: "http://localhost:8000",
+  baseURL: API_BASE_URL,
   timeout: 15000,
 });
 
@@ -57,7 +59,7 @@ api.interceptors.response.use(
 
       try {
         const refresh = getRefreshToken();
-        const resp = await axios.post("http://localhost:8000/api/auth/token/refresh/", { refresh });
+        const resp = await axios.post(`${API_BASE_URL}/api/auth/token/refresh/`, { refresh });
         const newAccess = resp.data.access;
 
         setAuth({

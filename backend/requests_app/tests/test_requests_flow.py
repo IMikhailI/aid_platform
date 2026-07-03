@@ -209,7 +209,7 @@ class RequestsFlowAPITests(APITestCase):
         self.assertEqual(req.status, RequestStatus.IN_PROGRESS)
         self.assertTrue(HelpCommitment.objects.filter(aid_request=req, helper=self.helper).exists())
 
-    def test_helper_can_close_only_own_in_progress_request(self):
+    def test_helper_cannot_close_in_progress_request(self):
         req = self.create_request()
 
         self.auth(self.moderator)
@@ -233,13 +233,13 @@ class RequestsFlowAPITests(APITestCase):
         resp = self.client.patch(f"/api/requests/close/{req.id}/", {}, format="json")
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN, getattr(resp, "data", resp.content.decode()))
 
-        # owner helper can close
+        # owner helper also cannot close; receipt must be confirmed by applicant
         self.auth(self.helper)
         resp2 = self.client.patch(f"/api/requests/close/{req.id}/", {}, format="json")
-        self.assertEqual(resp2.status_code, status.HTTP_200_OK, getattr(resp2, "data", resp2.content.decode()))
+        self.assertEqual(resp2.status_code, status.HTTP_403_FORBIDDEN, getattr(resp2, "data", resp2.content.decode()))
 
         req.refresh_from_db()
-        self.assertEqual(req.status, RequestStatus.CLOSED)
+        self.assertEqual(req.status, RequestStatus.IN_PROGRESS)
 
     def test_forbidden_by_role(self):
         req = self.create_request()

@@ -80,6 +80,23 @@ cd ~/aid_platform
 - `GET /api/moderation/verifications/{id}/`
 - `POST /api/moderation/verifications/{id}/decision/`
 
+### Демонстрационная целевая помощь
+
+Fulfillment использует только внутренний `mock_certificate`: реальных платежей,
+магазинов и денежной ценности у сертификата нет. Helper создаёт сертификат и
+отмечает его переданным, но не закрывает заявку. `AidRequest` становится
+`closed` только после подтверждения получения самим applicant. Полный код скрыт
+от helper и доступен applicant только после delivery.
+
+Endpoints:
+
+- `GET/POST /api/helper/requests/{id}/fulfillment/`
+- `POST /api/helper/requests/{id}/fulfillment/deliver/`
+- `GET /api/applicant/requests/{id}/fulfillment/`
+- `POST /api/applicant/requests/{id}/confirm-receipt/`
+- `GET /api/moderation/requests/{id}/fulfillment/`
+- `PATCH /api/requests/close/{id}/` — deprecated applicant confirmation alias
+
 ---
 
 ## 3) Запуск в фоне

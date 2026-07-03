@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
+import uuid
 
 class RequestCategory(models.TextChoices):
     FOOD = "food", "Еда"
@@ -89,3 +90,54 @@ class HelpCommitment(models.Model):
     )
     note = models.CharField(max_length=255, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class FulfillmentType(models.TextChoices):
+    MOCK_CERTIFICATE = "mock_certificate", "Демонстрационный сертификат"
+
+
+class FulfillmentStatus(models.TextChoices):
+    CREATED = "created", "Создан"
+    DELIVERED = "delivered", "Передан"
+    CONFIRMED = "confirmed", "Получение подтверждено"
+
+
+class AidFulfillment(models.Model):
+    commitment = models.OneToOneField(
+        HelpCommitment,
+        on_delete=models.CASCADE,
+        related_name="fulfillment",
+    )
+    fulfillment_type = models.CharField(
+        max_length=32,
+        choices=FulfillmentType.choices,
+        default=FulfillmentType.MOCK_CERTIFICATE,
+    )
+    provider_name = models.CharField(max_length=120)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    certificate_code = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    status = models.CharField(
+        max_length=16,
+        choices=FulfillmentStatus.choices,
+        default=FulfillmentStatus.CREATED,
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="aid_fulfillments_created",
+    )
+    delivered_at = models.DateTimeField(null=True, blank=True)
+    confirmed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(amount__gt=0),
+                name="aid_fulfillment_amount_positive",
+            )
+        ]
+
+    def __str__(self):
+        return f"Fulfillment(id={self.id}, request_id={self.commitment.aid_request_id}, status={self.status})"

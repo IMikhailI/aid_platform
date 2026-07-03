@@ -211,9 +211,10 @@ class PrivacyApiContractTests(APITestCase):
         self._auth(self.helper)
         response = self.client.patch(f"/api/requests/close/{self.published_request.id}/", {}, format="json")
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(set(response.data), {"detail"})
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assert_forbidden_keys_absent(response.data)
+        self.published_request.refresh_from_db()
+        self.assertEqual(self.published_request.status, RequestStatus.IN_PROGRESS)
 
     def test_applicant_create_response_hides_fraud_and_telemetry(self):
         self._auth(self.applicant)

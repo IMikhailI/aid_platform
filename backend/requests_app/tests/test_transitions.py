@@ -6,7 +6,10 @@ from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from requests_app.models import AidRequest, HelpCommitment, RequestStatus, RequestStatusHistory
+from requests_app.models import (
+    AidFulfillment, AidRequest, FulfillmentStatus, HelpCommitment,
+    RequestStatus, RequestStatusHistory,
+)
 from requests_app.admin import AidRequestAdmin
 from requests_app.services.transitions import InvalidRequestTransition, transition_request
 from fraud.models import FraudAction, FraudDecision
@@ -207,9 +210,13 @@ class RequestTransitionApiTests(APITestCase):
 
     def test_close_uses_transition_service(self):
         aid_request = make_request(applicant=self.applicant, request_status=RequestStatus.IN_PROGRESS)
-        HelpCommitment.objects.create(aid_request=aid_request, helper=self.helper, method="certificate")
-        self.auth(self.helper)
-        with patch("requests_app.views.transition_request", wraps=transition_request) as service:
+        commitment = HelpCommitment.objects.create(aid_request=aid_request, helper=self.helper, method="certificate")
+        AidFulfillment.objects.create(
+            commitment=commitment, provider_name="Mock", amount="100.00",
+            created_by=self.helper, status=FulfillmentStatus.DELIVERED,
+        )
+        self.auth(self.applicant)
+        with patch("requests_app.services.fulfillment.transition_request", wraps=transition_request) as service:
             response = self.client.patch(f"/api/requests/close/{aid_request.id}/", {}, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -242,13 +249,17 @@ class RequestTransitionApiTests(APITestCase):
 
     def test_repeated_close_creates_no_duplicate_history(self):
         aid_request = make_request(applicant=self.applicant, request_status=RequestStatus.IN_PROGRESS)
-        HelpCommitment.objects.create(aid_request=aid_request, helper=self.helper, method="certificate")
-        self.auth(self.helper)
+        commitment = HelpCommitment.objects.create(aid_request=aid_request, helper=self.helper, method="certificate")
+        AidFulfillment.objects.create(
+            commitment=commitment, provider_name="Mock", amount="100.00",
+            created_by=self.helper, status=FulfillmentStatus.DELIVERED,
+        )
+        self.auth(self.applicant)
         first = self.client.patch(f"/api/requests/close/{aid_request.id}/", {}, format="json")
         second = self.client.patch(f"/api/requests/close/{aid_request.id}/", {}, format="json")
 
         self.assertEqual(first.status_code, status.HTTP_200_OK)
-        self.assertEqual(second.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(second.status_code, status.HTTP_409_CONFLICT)
         self.assertEqual(
             RequestStatusHistory.objects.filter(
                 aid_request=aid_request,

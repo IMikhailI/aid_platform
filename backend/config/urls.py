@@ -23,6 +23,11 @@ from drf_spectacular.views import (
     SpectacularRedocView,
 )
 from moderation.urls import applicant_urlpatterns, moderation_urlpatterns
+from requests_app.fulfillment_urls import (
+    applicant_fulfillment_urlpatterns,
+    helper_fulfillment_urlpatterns,
+    moderator_fulfillment_urlpatterns,
+)
 
 def health(request):
     return JsonResponse({"status": "ok"})
@@ -38,6 +43,7 @@ urlpatterns = [
     path("api/auth/", include("users.urls")),
     path("api/requests/", include("requests_app.urls")),
     path("api/fraud/", include("fraud.api.urls")),
-    path("api/applicant/", include((applicant_urlpatterns, "applicant"))),
-    path("api/moderation/", include((moderation_urlpatterns, "moderation-api"))),
+    path("api/applicant/", include((applicant_urlpatterns + applicant_fulfillment_urlpatterns, "applicant"))),
+    path("api/helper/", include((helper_fulfillment_urlpatterns, "helper-fulfillment"))),
+    path("api/moderation/", include((moderation_urlpatterns + moderator_fulfillment_urlpatterns, "moderation-api"))),
 ]

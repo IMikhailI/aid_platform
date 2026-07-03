@@ -23,7 +23,6 @@ from .serializers import (
     HelperRequestStatusHistorySerializer,
     ModeratorRequestStatusHistorySerializer,
     StatusTransitionResponseSerializer,
-    DetailResponseSerializer,
     FraudPolicyErrorSerializer,
 )
 from fraud.services.engine import evaluate_request_safe
@@ -31,6 +30,13 @@ from fraud.services.device import extract_request_telemetry
 from fraud.models import FraudDecision
 from fraud.services.policy import FraudPolicyViolation, assert_request_can_be_published
 from moderation.models import ApplicantVerification
+from requests_app.fulfillment_serializers import FulfillmentErrorSerializer, ReceiptConfirmationSerializer
+from requests_app.fulfillment_views import fulfillment_error_response
+from requests_app.services.fulfillment import (
+    FulfillmentNotFound,
+    FulfillmentStateConflict,
+    confirm_certificate_received,
+)
 from drf_spectacular.utils import extend_schema, OpenApiResponse, PolymorphicProxySerializer
 
 class DefaultPagePagination(PageNumberPagination):
@@ -260,57 +266,25 @@ class CloseRequestView(APIView):
 
     @extend_schema(
         request=None,
-        summary="Закрыть заявку",
-        description="Закрывает заявку в статусе in_progress. Доступно admin или helper, который взял заявку в работу.",
+        summary="Deprecated alias подтверждения получения",
+        description="Applicant подтверждает получение; helper не может закрыть заявку.",
+        deprecated=True,
         responses={
-            200: DetailResponseSerializer,
-            400: OpenApiResponse(description="Нельзя закрыть заявку в текущем статусе"),
+            200: ReceiptConfirmationSerializer,
             403: OpenApiResponse(description="Недостаточно прав"),
-            404: OpenApiResponse(description="Заявка не найдена"),
+            404: FulfillmentErrorSerializer,
+            409: FulfillmentErrorSerializer,
         },
     )
-    @transaction.atomic
     def patch(self, request, request_id):
-        aid_request = get_object_or_404(
-            AidRequest.objects.select_for_update(),
-            id=request_id
-        )
-
-        # helper — может закрыть только свою взятую заявку
-        if request.user.role == "helper":
-            has_commitment = HelpCommitment.objects.filter(
-                aid_request=aid_request,
-                helper=request.user
-            ).exists()
-            if not has_commitment:
-                return Response(
-                    {"detail": "You can close only your own in-progress requests."},
-                    status=status.HTTP_403_FORBIDDEN
-                )
-
         try:
-            result = transition_request(
-                request_id=aid_request.id,
-                target_status=RequestStatus.CLOSED,
-                actor=request.user,
-                comment="Заявка закрыта",
+            fulfillment = confirm_certificate_received(
+                request_id=request_id,
+                applicant=request.user,
             )
-        except InvalidRequestTransition:
-            return Response(
-                {"detail": "Недопустимый переход статуса заявки."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        if not result.changed:
-            return Response(
-                {"detail": "Заявка уже закрыта."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        return Response(
-            {"detail": "Request closed successfully."},
-            status=status.HTTP_200_OK
-        )
+        except (FulfillmentNotFound, FulfillmentStateConflict) as exc:
+            return fulfillment_error_response(exc)
+        return Response({"request_status": "closed", "fulfillment_status": fulfillment.status})
 
 class RequestHistoryView(APIView):
     permission_classes = [IsAuthenticated]

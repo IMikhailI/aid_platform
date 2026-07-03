@@ -41,6 +41,10 @@ def evaluate_request(aid_request: AidRequest, engine_version: str = "rules-v3") 
     - пишет/обновляет FraudDecision
     - синхронизирует поля риска в AidRequest
     """
+    # Recheck and moderation acquire locks in the same order. This also serializes
+    # creation of the one-to-one decision with a concurrent approve.
+    aid_request = AidRequest.objects.select_for_update().get(pk=aid_request.pk)
+
     signals: list[Signal] = collect_signals(aid_request)
     score = max(0, min(100, sum(s.weight for s in signals)))
     reasons = [
@@ -65,18 +69,21 @@ def evaluate_request(aid_request: AidRequest, engine_version: str = "rules-v3") 
     if checks_to_create:
         FraudCheck.objects.bulk_create(checks_to_create)
 
-    decision, created = FraudDecision.objects.get_or_create(
-        aid_request=aid_request,
-        defaults={
-            "score": score,
-            "risk_level": risk_level,
-            "action": base_action,
-            "base_action": base_action,
-            "is_overridden": False,
-            "reasons": reasons,
-            "engine_version": engine_version,
-        },
-    )
+    try:
+        decision = FraudDecision.objects.select_for_update().get(aid_request=aid_request)
+        created = False
+    except FraudDecision.DoesNotExist:
+        decision = FraudDecision.objects.create(
+            aid_request=aid_request,
+            score=score,
+            risk_level=risk_level,
+            action=base_action,
+            base_action=base_action,
+            is_overridden=False,
+            reasons=reasons,
+            engine_version=engine_version,
+        )
+        created = True
 
     if not created:
         decision.score = score

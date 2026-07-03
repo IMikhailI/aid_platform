@@ -43,4 +43,8 @@ class FraudOverrideSerializer(serializers.ModelSerializer):
 
 class FraudOverrideCreateSerializer(serializers.Serializer):
     new_action = serializers.ChoiceField(choices=FraudAction.choices)
-    comment = serializers.CharField()
+    comment = serializers.CharField(
+        min_length=1,
+        trim_whitespace=True,
+        help_text="Обязательная причина ручного изменения решения.",
+    )

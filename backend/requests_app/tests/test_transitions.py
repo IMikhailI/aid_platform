@@ -9,6 +9,7 @@ from rest_framework.test import APITestCase
 from requests_app.models import AidRequest, HelpCommitment, RequestStatus, RequestStatusHistory
 from requests_app.admin import AidRequestAdmin
 from requests_app.services.transitions import InvalidRequestTransition, transition_request
+from fraud.models import FraudAction, FraudDecision
 
 
 User = get_user_model()
@@ -155,6 +156,11 @@ class RequestTransitionApiTests(APITestCase):
 
     def test_approve_uses_transition_service(self):
         aid_request = make_request(applicant=self.applicant, request_status=RequestStatus.ON_MODERATION)
+        FraudDecision.objects.create(
+            aid_request=aid_request,
+            base_action=FraudAction.ALLOW,
+            action=FraudAction.ALLOW,
+        )
         self.auth(self.moderator)
         with patch("requests_app.views.transition_request", wraps=transition_request) as service:
             response = self.client.post(
@@ -261,6 +267,12 @@ class RequestTransitionApiTests(APITestCase):
                 applicant=self.applicant,
                 request_status=RequestStatus.ON_MODERATION,
             )
+            if action == "approve":
+                FraudDecision.objects.create(
+                    aid_request=aid_request,
+                    base_action=FraudAction.ALLOW,
+                    action=FraudAction.ALLOW,
+                )
             first = self.client.post(
                 f"/api/requests/moderation/{aid_request.id}/",
                 {"action": action},

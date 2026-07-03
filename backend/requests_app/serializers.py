@@ -129,3 +129,11 @@ class StatusTransitionResponseSerializer(serializers.Serializer):
 
 class DetailResponseSerializer(serializers.Serializer):
     detail = serializers.CharField(read_only=True)
+
+
+class FraudPolicyErrorSerializer(serializers.Serializer):
+    code = serializers.ChoiceField(
+        choices=["fraud_publication_blocked", "fraud_decision_missing"],
+        read_only=True,
+    )
+    detail = serializers.CharField(read_only=True)

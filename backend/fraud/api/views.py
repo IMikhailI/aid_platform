@@ -7,6 +7,7 @@ from rest_framework.views import APIView
 from requests_app.models import AidRequest
 from fraud.models import FraudDecision, FraudCheck, FraudOverride
 from fraud.services.engine import evaluate_request_safe
+from drf_spectacular.utils import extend_schema, OpenApiResponse
 from .permissions import IsModeratorOrAdmin
 from .serializers import (
     FraudDecisionSerializer,
@@ -38,10 +39,24 @@ class FraudChecksView(generics.ListAPIView):
 class FraudOverrideView(APIView):
     permission_classes = [IsModeratorOrAdmin]
 
+    @extend_schema(
+        request=FraudOverrideCreateSerializer,
+        responses={
+            201: FraudOverrideSerializer,
+            400: OpenApiResponse(description="Недопустимое action или отсутствует непустая причина"),
+            403: OpenApiResponse(description="Недостаточно прав"),
+            404: OpenApiResponse(description="Заявка или fraud decision не найдены"),
+        },
+        summary="Ручное изменение effective fraud action",
+    )
     @transaction.atomic
     def post(self, request, request_id: int):
-        aid_request = get_object_or_404(AidRequest, id=request_id)
-        decision = get_object_or_404(FraudDecision, aid_request=aid_request)
+        aid_request = get_object_or_404(
+            AidRequest.objects.select_for_update(), id=request_id
+        )
+        decision = get_object_or_404(
+            FraudDecision.objects.select_for_update(), aid_request=aid_request
+        )
 
         serializer = FraudOverrideCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)

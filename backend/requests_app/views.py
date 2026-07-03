@@ -23,9 +23,12 @@ from .serializers import (
     ModeratorRequestStatusHistorySerializer,
     StatusTransitionResponseSerializer,
     DetailResponseSerializer,
+    FraudPolicyErrorSerializer,
 )
 from fraud.services.engine import evaluate_request_safe
 from fraud.services.device import extract_request_telemetry
+from fraud.models import FraudDecision
+from fraud.services.policy import FraudPolicyViolation, assert_request_can_be_published
 from drf_spectacular.utils import extend_schema, OpenApiResponse, PolymorphicProxySerializer
 
 class DefaultPagePagination(PageNumberPagination):
@@ -135,7 +138,17 @@ class ModerateRequestView(APIView):
         request=ModerationActionSerializer,
         responses={
             200: StatusTransitionResponseSerializer,
-            400: OpenApiResponse(description="Ошибка валидации"),
+            400: OpenApiResponse(
+                description="Ошибка валидации или недопустимый lifecycle-переход"
+            ),
+            409: OpenApiResponse(
+                response=FraudPolicyErrorSerializer,
+                description=(
+                    "Approve запрещён: effective action=block "
+                    "(fraud_publication_blocked) или решение отсутствует "
+                    "(fraud_decision_missing)"
+                ),
+            ),
             403: OpenApiResponse(description="Недостаточно прав"),
             404: OpenApiResponse(description="Заявка не найдена"),
         },
@@ -152,14 +165,28 @@ class ModerateRequestView(APIView):
         target_status = RequestStatus.PUBLISHED if action == "approve" else RequestStatus.REJECTED
 
         try:
+            aid_request = AidRequest.objects.select_for_update().get(id=request_id)
+            if action == "approve":
+                decision = (
+                    FraudDecision.objects.select_for_update()
+                    .filter(aid_request=aid_request)
+                    .first()
+                )
+                assert_request_can_be_published(decision)
+
             result = transition_request(
-                request_id=request_id,
+                request_id=aid_request.id,
                 target_status=target_status,
                 actor=request.user,
                 comment=comment,
             )
         except AidRequest.DoesNotExist:
             return Response({"detail": "Заявка не найдена"}, status=404)
+        except FraudPolicyViolation as exc:
+            return Response(
+                {"code": exc.code, "detail": exc.detail},
+                status=status.HTTP_409_CONFLICT,
+            )
         except InvalidRequestTransition:
             return Response({"detail": "Недопустимый переход статуса заявки."}, status=400)
 

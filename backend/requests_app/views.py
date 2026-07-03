@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, permissions, status, filters
 from rest_framework.response import Response
@@ -29,6 +30,7 @@ from fraud.services.engine import evaluate_request_safe
 from fraud.services.device import extract_request_telemetry
 from fraud.models import FraudDecision
 from fraud.services.policy import FraudPolicyViolation, assert_request_can_be_published
+from moderation.models import ApplicantVerification
 from drf_spectacular.utils import extend_schema, OpenApiResponse, PolymorphicProxySerializer
 
 class DefaultPagePagination(PageNumberPagination):
@@ -98,8 +100,14 @@ class ModerationQueueView(generics.ListAPIView):
         qs = (
             AidRequest.objects
             .filter(status=RequestStatus.ON_MODERATION)
-            .select_related("applicant")
-            .prefetch_related("fraud_decision")
+            .select_related("applicant", "applicant__applicant_profile")
+            .prefetch_related(
+                "fraud_decision",
+                Prefetch(
+                    "applicant__applicant_profile__verification_requests",
+                    queryset=ApplicantVerification.objects.order_by("-submitted_at", "-id"),
+                ),
+            )
         )
 
         # region case-insensitive

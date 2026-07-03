@@ -22,6 +22,7 @@ from drf_spectacular.views import (
     SpectacularSwaggerView,
     SpectacularRedocView,
 )
+from moderation.urls import applicant_urlpatterns, moderation_urlpatterns
 
 def health(request):
     return JsonResponse({"status": "ok"})
@@ -37,5 +38,6 @@ urlpatterns = [
     path("api/auth/", include("users.urls")),
     path("api/requests/", include("requests_app.urls")),
     path("api/fraud/", include("fraud.api.urls")),
+    path("api/applicant/", include((applicant_urlpatterns, "applicant"))),
+    path("api/moderation/", include((moderation_urlpatterns, "moderation-api"))),
 ]
-

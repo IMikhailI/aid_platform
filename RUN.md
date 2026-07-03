@@ -64,6 +64,22 @@ cd ~/aid_platform
 - Admin: http://localhost:8000/admin/
 - Frontend: http://localhost:5173
 
+### Демонстрационная верификация заявителя
+
+В MVP используется только ручная внутренняя верификация платформы. Реальные
+документы не загружаются, интеграции с Госуслугами/ЕСИА и юридической проверки
+личности нет. Профиль и история заявителя недоступны helper; решение принимает
+только moderator/admin.
+
+Новые API endpoints:
+
+- `GET/PATCH /api/applicant/profile/`
+- `POST /api/applicant/verification/submit/`
+- `GET /api/applicant/verification/history/`
+- `GET /api/moderation/verifications/`
+- `GET /api/moderation/verifications/{id}/`
+- `POST /api/moderation/verifications/{id}/decision/`
+
 ---
 
 ## 3) Запуск в фоне

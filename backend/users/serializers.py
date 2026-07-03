@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
+from django.db import transaction
 from rest_framework import serializers
-from .models import UserRole
+from .models import ApplicantProfile, UserRole
 
 User = get_user_model()
 
@@ -26,11 +27,14 @@ class RegisterSerializer(serializers.ModelSerializer):
             )
         return value
 
+    @transaction.atomic
     def create(self, validated_data):
         password = validated_data.pop("password")
         user = User(**validated_data)
         user.set_password(password)
         user.save()
+        if user.role == UserRole.APPLICANT:
+            ApplicantProfile.objects.get_or_create(user=user)
         return user
 
 class MeSerializer(serializers.ModelSerializer):

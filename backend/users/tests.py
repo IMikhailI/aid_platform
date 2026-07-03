@@ -1,5 +1,11 @@
 from rest_framework import status
 from rest_framework.test import APITestCase
+from django.contrib.auth import get_user_model
+
+from users.models import ApplicantProfile
+
+
+User = get_user_model()
 
 
 class RegisterViewTests(APITestCase):
@@ -18,6 +24,7 @@ class RegisterViewTests(APITestCase):
 
         self.assertEqual(resp.status_code, status.HTTP_201_CREATED, resp.data)
         self.assertEqual(resp.data["role"], "applicant")
+        self.assertTrue(ApplicantProfile.objects.filter(user_id=resp.data["id"]).exists())
 
     def test_public_registration_allows_helper(self):
         resp = self.client.post(
@@ -34,6 +41,7 @@ class RegisterViewTests(APITestCase):
 
         self.assertEqual(resp.status_code, status.HTTP_201_CREATED, resp.data)
         self.assertEqual(resp.data["role"], "helper")
+        self.assertFalse(ApplicantProfile.objects.filter(user_id=resp.data["id"]).exists())
 
     def test_public_registration_denies_moderator(self):
         resp = self.client.post(

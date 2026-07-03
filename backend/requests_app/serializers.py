@@ -1,5 +1,7 @@
 from django.db import transaction
+from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
+from drf_spectacular.utils import extend_schema_field
 
 from .models import AidRequest, RequestStatusHistory, HelpCommitment, RequestStatus
 from .services.transitions import transition_request
@@ -58,12 +60,27 @@ class HelperAidRequestSerializer(serializers.ModelSerializer):
 
 class ModeratorAidRequestSerializer(serializers.ModelSerializer):
     applicant_username = serializers.CharField(source="applicant.username", read_only=True)
+    applicant_verification_status = serializers.SerializerMethodField()
+
+    @extend_schema_field(
+        serializers.ChoiceField(
+            choices=["not_submitted", "pending", "verified", "rejected"]
+        )
+    )
+    def get_applicant_verification_status(self, obj):
+        try:
+            profile = obj.applicant.applicant_profile
+        except ObjectDoesNotExist:
+            return "not_submitted"
+        latest = profile.verification_requests.first()
+        return latest.status if latest else "not_submitted"
 
     class Meta:
         model = AidRequest
         fields = (
             "id", "title", "category", "region", "requested_amount", "urgency",
-            "status", "risk_score", "is_flagged", "applicant_username", "created_at"
+            "status", "risk_score", "is_flagged", "applicant_username",
+            "applicant_verification_status", "created_at"
         )
         read_only_fields = fields
 

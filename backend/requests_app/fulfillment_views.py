@@ -2,10 +2,11 @@ from django.shortcuts import get_object_or_404
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from drf_spectacular.utils import OpenApiResponse, extend_schema
+from drf_spectacular.utils import OpenApiResponse, PolymorphicProxySerializer, extend_schema
 
 from requests_app.fulfillment_serializers import (
-    ApplicantFulfillmentSerializer, FulfillmentCreateSerializer,
+    ApplicantDeliveredFulfillmentSerializer, ApplicantPreparedFulfillmentSerializer,
+    FulfillmentCreateSerializer,
     FulfillmentErrorSerializer, HelperFulfillmentSerializer,
     ModeratorFulfillmentSerializer, ReceiptConfirmationSerializer,
 )
@@ -30,7 +31,7 @@ def fulfillment_error_response(exc):
 class HelperFulfillmentView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsHelperOnly]
 
-    @extend_schema(responses={200: HelperFulfillmentSerializer, 403: OpenApiResponse(description="Недостаточно прав"), 404: FulfillmentErrorSerializer})
+    @extend_schema(operation_id="helper_fulfillment_retrieve", tags=["helper-fulfillment"], summary="Получить собственный fulfillment", responses={200: HelperFulfillmentSerializer, 403: OpenApiResponse(description="Недостаточно прав"), 404: FulfillmentErrorSerializer})
     def get(self, request, request_id: int):
         fulfillment = get_object_or_404(
             AidFulfillment.objects.select_related("commitment"),
@@ -38,7 +39,7 @@ class HelperFulfillmentView(APIView):
         )
         return Response(HelperFulfillmentSerializer(fulfillment).data)
 
-    @extend_schema(request=FulfillmentCreateSerializer, responses={201: HelperFulfillmentSerializer, 400: FulfillmentErrorSerializer, 403: OpenApiResponse(description="Недостаточно прав"), 404: FulfillmentErrorSerializer, 409: FulfillmentErrorSerializer})
+    @extend_schema(operation_id="helper_fulfillment_create", tags=["helper-fulfillment"], summary="Создать демонстрационный сертификат", request=FulfillmentCreateSerializer, responses={201: HelperFulfillmentSerializer, 400: FulfillmentErrorSerializer, 403: OpenApiResponse(description="Недостаточно прав"), 404: FulfillmentErrorSerializer, 409: FulfillmentErrorSerializer})
     def post(self, request, request_id: int):
         serializer = FulfillmentCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -56,7 +57,7 @@ class HelperFulfillmentView(APIView):
 class HelperFulfillmentDeliverView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsHelperOnly]
 
-    @extend_schema(request=None, responses={200: HelperFulfillmentSerializer, 403: OpenApiResponse(description="Недостаточно прав"), 404: FulfillmentErrorSerializer, 409: FulfillmentErrorSerializer})
+    @extend_schema(operation_id="helper_fulfillment_deliver", tags=["helper-fulfillment"], summary="Отметить сертификат переданным", request=None, responses={200: HelperFulfillmentSerializer, 403: OpenApiResponse(description="Недостаточно прав"), 404: FulfillmentErrorSerializer, 409: FulfillmentErrorSerializer})
     def post(self, request, request_id: int):
         try:
             fulfillment = mark_certificate_delivered(request_id=request_id, helper=request.user)
@@ -68,20 +69,41 @@ class HelperFulfillmentDeliverView(APIView):
 class ApplicantFulfillmentView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsApplicant]
 
-    @extend_schema(responses={200: ApplicantFulfillmentSerializer, 403: OpenApiResponse(description="Недостаточно прав"), 404: OpenApiResponse(description="Fulfillment не найден")})
+    @extend_schema(
+        operation_id="applicant_fulfillment_retrieve",
+        tags=["applicant-fulfillment"],
+        summary="Получить fulfillment собственной заявки",
+        responses={
+            200: PolymorphicProxySerializer(
+                component_name="ApplicantFulfillmentResponse",
+                serializers=[
+                    ApplicantPreparedFulfillmentSerializer,
+                    ApplicantDeliveredFulfillmentSerializer,
+                ],
+                resource_type_field_name=None,
+            ),
+            403: OpenApiResponse(description="Недостаточно прав"),
+            404: OpenApiResponse(description="Fulfillment не найден"),
+        },
+    )
     def get(self, request, request_id: int):
         fulfillment = get_object_or_404(
             AidFulfillment.objects.select_related("commitment__aid_request"),
             commitment__aid_request_id=request_id,
             commitment__aid_request__applicant=request.user,
         )
-        return Response(ApplicantFulfillmentSerializer(fulfillment).data)
+        serializer_class = (
+            ApplicantPreparedFulfillmentSerializer
+            if fulfillment.status == "created"
+            else ApplicantDeliveredFulfillmentSerializer
+        )
+        return Response(serializer_class(fulfillment).data)
 
 
 class ApplicantConfirmReceiptView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsApplicant]
 
-    @extend_schema(request=None, responses={200: ReceiptConfirmationSerializer, 403: OpenApiResponse(description="Недостаточно прав"), 404: FulfillmentErrorSerializer, 409: FulfillmentErrorSerializer})
+    @extend_schema(operation_id="applicant_receipt_confirm", tags=["applicant-fulfillment"], summary="Подтвердить получение помощи", request=None, responses={200: ReceiptConfirmationSerializer, 403: OpenApiResponse(description="Недостаточно прав"), 404: FulfillmentErrorSerializer, 409: FulfillmentErrorSerializer})
     def post(self, request, request_id: int):
         try:
             fulfillment = confirm_certificate_received(request_id=request_id, applicant=request.user)
@@ -93,7 +115,7 @@ class ApplicantConfirmReceiptView(APIView):
 class ModeratorFulfillmentView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsModerator]
 
-    @extend_schema(responses={200: ModeratorFulfillmentSerializer, 403: OpenApiResponse(description="Недостаточно прав"), 404: OpenApiResponse(description="Fulfillment не найден")})
+    @extend_schema(operation_id="moderation_fulfillment_retrieve", tags=["moderation-fulfillment"], summary="Получить служебные сведения fulfillment", responses={200: ModeratorFulfillmentSerializer, 403: OpenApiResponse(description="Недостаточно прав"), 404: OpenApiResponse(description="Fulfillment не найден")})
     def get(self, request, request_id: int):
         fulfillment = get_object_or_404(
             AidFulfillment.objects.select_related(

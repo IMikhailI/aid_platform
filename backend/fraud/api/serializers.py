@@ -48,3 +48,7 @@ class FraudOverrideCreateSerializer(serializers.Serializer):
         trim_whitespace=True,
         help_text="Обязательная причина ручного изменения решения.",
     )
+
+
+class FraudRecheckFailureSerializer(serializers.Serializer):
+    detail = serializers.CharField(read_only=True)

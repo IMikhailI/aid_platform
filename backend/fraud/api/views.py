@@ -7,19 +7,30 @@ from rest_framework.views import APIView
 from requests_app.models import AidRequest
 from fraud.models import FraudDecision, FraudCheck, FraudOverride
 from fraud.services.engine import evaluate_request_safe
-from drf_spectacular.utils import extend_schema, OpenApiResponse
+from drf_spectacular.utils import extend_schema, OpenApiResponse, PolymorphicProxySerializer
 from .permissions import IsModeratorOrAdmin
 from .serializers import (
     FraudDecisionSerializer,
     FraudCheckSerializer,
     FraudOverrideSerializer,
     FraudOverrideCreateSerializer,
+    FraudRecheckFailureSerializer,
 )
 
 
 class FraudDecisionView(APIView):
     permission_classes = [IsModeratorOrAdmin]
 
+    @extend_schema(
+        operation_id="fraud_decision_retrieve",
+        tags=["fraud"],
+        summary="Получить актуальное fraud-решение",
+        responses={
+            200: FraudDecisionSerializer,
+            403: OpenApiResponse(description="Недостаточно прав"),
+            404: OpenApiResponse(description="Заявка или fraud decision не найдены"),
+        },
+    )
     def get(self, request, request_id: int):
         aid_request = get_object_or_404(AidRequest, id=request_id)
         decision = get_object_or_404(FraudDecision, aid_request=aid_request)
@@ -30,7 +41,22 @@ class FraudChecksView(generics.ListAPIView):
     permission_classes = [IsModeratorOrAdmin]
     serializer_class = FraudCheckSerializer
 
+    @extend_schema(
+        operation_id="fraud_checks_list",
+        tags=["fraud"],
+        summary="Получить fraud-сигналы заявки",
+        responses={
+            200: FraudCheckSerializer(many=True),
+            403: OpenApiResponse(description="Недостаточно прав"),
+            404: OpenApiResponse(description="Заявка не найдена"),
+        },
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return FraudCheck.objects.none()
         request_id = self.kwargs["request_id"]
         aid_request = get_object_or_404(AidRequest, id=request_id)
         return FraudCheck.objects.filter(aid_request=aid_request).order_by("-created_at")
@@ -40,6 +66,8 @@ class FraudOverrideView(APIView):
     permission_classes = [IsModeratorOrAdmin]
 
     @extend_schema(
+        operation_id="fraud_override_create",
+        tags=["fraud"],
         request=FraudOverrideCreateSerializer,
         responses={
             201: FraudOverrideSerializer,
@@ -83,6 +111,21 @@ class FraudOverrideView(APIView):
 class FraudRecheckView(APIView):
     permission_classes = [IsModeratorOrAdmin]
 
+    @extend_schema(
+        operation_id="fraud_recheck_create",
+        tags=["fraud"],
+        summary="Повторно выполнить fraud-проверку",
+        request=None,
+        responses={
+            200: PolymorphicProxySerializer(
+                component_name="FraudRecheckResponse",
+                serializers=[FraudDecisionSerializer, FraudRecheckFailureSerializer],
+                resource_type_field_name=None,
+            ),
+            403: OpenApiResponse(description="Недостаточно прав"),
+            404: OpenApiResponse(description="Заявка не найдена"),
+        },
+    )
     def post(self, request, request_id: int):
         aid_request = get_object_or_404(AidRequest, id=request_id)
         decision = evaluate_request_safe(aid_request)

@@ -146,6 +146,22 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "API для платформы адресной помощи: заявка, модерация, помощь, закрытие кейса",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
+    "ENUM_NAME_OVERRIDES": {
+        "UserRoleEnum": "users.models.UserRole.choices",
+        "AidRequestStatusEnum": "requests_app.models.RequestStatus.choices",
+        "RequestCategoryEnum": "requests_app.models.RequestCategory.choices",
+        "FraudActionEnum": "fraud.models.FraudAction.choices",
+        "FraudRiskLevelEnum": "fraud.models.FraudRiskLevel.choices",
+        "VerificationStatusEnum": "moderation.models.VerificationStatus.choices",
+        "ApplicantVerificationStatusEnum": [
+            ("not_submitted", "not_submitted"),
+            ("pending", "pending"),
+            ("verified", "verified"),
+            ("rejected", "rejected"),
+        ],
+        "FulfillmentStatusEnum": "requests_app.models.FulfillmentStatus.choices",
+        "FulfillmentTypeEnum": "requests_app.models.FulfillmentType.choices",
+    },
     "SWAGGER_UI_SETTINGS": {
         "persistAuthorization": True,  # чтобы токен не пропадал после refresh страницы
     },

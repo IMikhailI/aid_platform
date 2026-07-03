@@ -279,6 +279,25 @@ Smoke-проверка негативных и fraud-сценариев:
 ./antifraud_lab.sh
 ```
 
+Проверка migration state и применение migrations:
+
+```bash
+docker compose exec -T backend python manage.py makemigrations --check --dry-run
+docker compose exec -T backend python manage.py migrate
+```
+
+Генерация и validation стабильного OpenAPI-контракта:
+
+```bash
+docker compose exec -T backend python manage.py spectacular \
+  --file docs/openapi.yaml --validate
+```
+
+Схема хранится в `backend/docs/openapi.yaml`, человекочитаемый контракт — в
+[`docs/API_CONTRACT.md`](docs/API_CONTRACT.md). После любого изменения URL,
+serializer, permissions или response JSON схему нужно перегенерировать и
+запустить contract tests.
+
 Важно: frontend теперь отправляет `X-Device-Id`, а backend хранит только salted hash этого значения, IP и `User-Agent`. Это нужно для поиска мультиаккаунтов и cross-account дублей, а не для получения "настоящего hardware id".
 
 Сидирование демо-данных:

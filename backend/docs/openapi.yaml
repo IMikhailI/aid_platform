@@ -1,0 +1,2196 @@
+openapi: 3.0.3
+info:
+  title: Aid Platform API
+  version: 1.0.0
+  description: 'API для платформы адресной помощи: заявка, модерация, помощь, закрытие
+    кейса'
+paths:
+  /api/applicant/profile/:
+    get:
+      operationId: applicant_profile_retrieve
+      summary: Получить профиль текущего applicant
+      tags:
+      - applicant-profile
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicantProfile'
+          description: ''
+        '403':
+          description: Недостаточно прав
+    patch:
+      operationId: applicant_profile_update
+      summary: Обновить профиль текущего applicant
+      tags:
+      - applicant-profile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedApplicantProfile'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedApplicantProfile'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedApplicantProfile'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicantProfile'
+          description: ''
+        '400':
+          description: Ошибка валидации профиля
+        '403':
+          description: Недостаточно прав
+  /api/applicant/requests/{request_id}/confirm-receipt/:
+    post:
+      operationId: applicant_receipt_confirm
+      summary: Подтвердить получение помощи
+      parameters:
+      - in: path
+        name: request_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - applicant-fulfillment
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiptConfirmation'
+          description: ''
+        '403':
+          description: Недостаточно прав
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FulfillmentError'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FulfillmentError'
+          description: ''
+  /api/applicant/requests/{request_id}/fulfillment/:
+    get:
+      operationId: applicant_fulfillment_retrieve
+      summary: Получить fulfillment собственной заявки
+      parameters:
+      - in: path
+        name: request_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - applicant-fulfillment
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicantFulfillmentResponse'
+          description: ''
+        '403':
+          description: Недостаточно прав
+        '404':
+          description: Fulfillment не найден
+  /api/applicant/verification/history/:
+    get:
+      operationId: applicant_verification_history
+      summary: Получить собственную историю верификации
+      tags:
+      - applicant-verification
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ApplicantVerificationHistory'
+          description: ''
+        '403':
+          description: Недостаточно прав
+  /api/applicant/verification/submit/:
+    post:
+      operationId: applicant_verification_submit
+      summary: Отправить профиль на верификацию
+      tags:
+      - applicant-verification
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicantVerificationSummary'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerificationError'
+          description: ''
+        '403':
+          description: Недостаточно прав
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerificationError'
+          description: ''
+  /api/auth/me/:
+    get:
+      operationId: auth_me_retrieve
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Me'
+          description: ''
+  /api/auth/register/:
+    post:
+      operationId: auth_register_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Register'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Register'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Register'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Register'
+          description: ''
+  /api/auth/token/:
+    post:
+      operationId: auth_token_create
+      description: |-
+        Takes a set of user credentials and returns an access and refresh JSON web
+        token pair to prove the authentication of those credentials.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenObtainPair'
+          description: ''
+  /api/auth/token/refresh/:
+    post:
+      operationId: auth_token_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/fraud/requests/{request_id}/checks/:
+    get:
+      operationId: fraud_checks_list
+      summary: Получить fraud-сигналы заявки
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: path
+        name: request_id
+        schema:
+          type: integer
+        required: true
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - fraud
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedFraudCheckList'
+          description: ''
+        '403':
+          description: Недостаточно прав
+        '404':
+          description: Заявка не найдена
+  /api/fraud/requests/{request_id}/decision/:
+    get:
+      operationId: fraud_decision_retrieve
+      summary: Получить актуальное fraud-решение
+      parameters:
+      - in: path
+        name: request_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - fraud
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FraudDecision'
+          description: ''
+        '403':
+          description: Недостаточно прав
+        '404':
+          description: Заявка или fraud decision не найдены
+  /api/fraud/requests/{request_id}/override/:
+    post:
+      operationId: fraud_override_create
+      summary: Ручное изменение effective fraud action
+      parameters:
+      - in: path
+        name: request_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - fraud
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FraudOverrideCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FraudOverrideCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FraudOverrideCreate'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FraudOverride'
+          description: ''
+        '400':
+          description: Недопустимое action или отсутствует непустая причина
+        '403':
+          description: Недостаточно прав
+        '404':
+          description: Заявка или fraud decision не найдены
+  /api/fraud/requests/{request_id}/recheck/:
+    post:
+      operationId: fraud_recheck_create
+      summary: Повторно выполнить fraud-проверку
+      parameters:
+      - in: path
+        name: request_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - fraud
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FraudRecheckResponse'
+          description: ''
+        '403':
+          description: Недостаточно прав
+        '404':
+          description: Заявка не найдена
+  /api/helper/requests/{request_id}/fulfillment/:
+    get:
+      operationId: helper_fulfillment_retrieve
+      summary: Получить собственный fulfillment
+      parameters:
+      - in: path
+        name: request_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - helper-fulfillment
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HelperFulfillment'
+          description: ''
+        '403':
+          description: Недостаточно прав
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FulfillmentError'
+          description: ''
+    post:
+      operationId: helper_fulfillment_create
+      summary: Создать демонстрационный сертификат
+      parameters:
+      - in: path
+        name: request_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - helper-fulfillment
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FulfillmentCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FulfillmentCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FulfillmentCreate'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HelperFulfillment'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FulfillmentError'
+          description: ''
+        '403':
+          description: Недостаточно прав
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FulfillmentError'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FulfillmentError'
+          description: ''
+  /api/helper/requests/{request_id}/fulfillment/deliver/:
+    post:
+      operationId: helper_fulfillment_deliver
+      summary: Отметить сертификат переданным
+      parameters:
+      - in: path
+        name: request_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - helper-fulfillment
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HelperFulfillment'
+          description: ''
+        '403':
+          description: Недостаточно прав
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FulfillmentError'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FulfillmentError'
+          description: ''
+  /api/moderation/requests/{request_id}/fulfillment/:
+    get:
+      operationId: moderation_fulfillment_retrieve
+      summary: Получить служебные сведения fulfillment
+      parameters:
+      - in: path
+        name: request_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - moderation-fulfillment
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModeratorFulfillment'
+          description: ''
+        '403':
+          description: Недостаточно прав
+        '404':
+          description: Fulfillment не найден
+  /api/moderation/verifications/:
+    get:
+      operationId: moderation_verification_list
+      summary: Получить очередь верификаций
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: region
+        schema:
+          type: string
+        description: Регион applicant, регистронезависимое точное совпадение
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - pending
+          - rejected
+          - verified
+        description: Фильтр статуса; по умолчанию pending
+      tags:
+      - moderation-verification
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedModeratorVerificationList'
+          description: ''
+        '403':
+          description: Недостаточно прав
+  /api/moderation/verifications/{id}/:
+    get:
+      operationId: moderation_verification_retrieve
+      summary: Получить верификацию
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - moderation-verification
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModeratorVerification'
+          description: ''
+        '403':
+          description: Недостаточно прав
+        '404':
+          description: Verification не найдена
+  /api/moderation/verifications/{id}/decision/:
+    post:
+      operationId: moderation_verification_decide
+      summary: Принять решение по верификации
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - moderation-verification
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerificationDecision'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VerificationDecision'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/VerificationDecision'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModeratorVerification'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerificationError'
+          description: ''
+        '403':
+          description: Недостаточно прав
+        '404':
+          description: Verification не найдена
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerificationError'
+          description: ''
+  /api/requests/{request_id}/history/:
+    get:
+      operationId: request_history_retrieve
+      summary: История статусов заявки
+      parameters:
+      - in: path
+        name: request_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - request-history
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RequestHistoryByRole'
+          description: ''
+  /api/requests/applicant/create/:
+    post:
+      operationId: requests_applicant_create_create
+      tags:
+      - requests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AidRequestCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AidRequestCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AidRequestCreate'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AidRequestCreate'
+          description: ''
+  /api/requests/applicant/my/:
+    get:
+      operationId: requests_applicant_my_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - requests
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedApplicantAidRequestList'
+          description: ''
+  /api/requests/close/{request_id}/:
+    patch:
+      operationId: applicant_receipt_confirm_deprecated
+      description: Applicant подтверждает получение; helper не может закрыть заявку.
+      summary: Deprecated alias подтверждения получения
+      parameters:
+      - in: path
+        name: request_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - applicant-fulfillment
+      security:
+      - jwtAuth: []
+      deprecated: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiptConfirmation'
+          description: ''
+        '403':
+          description: Недостаточно прав
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FulfillmentError'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FulfillmentError'
+          description: ''
+  /api/requests/helper/take/{request_id}/:
+    post:
+      operationId: helper_request_take
+      description: Helper/admin берёт опубликованную заявку в работу
+      summary: Взять заявку в работу
+      parameters:
+      - in: path
+        name: request_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - helper-requests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HelpCommit'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/HelpCommit'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/HelpCommit'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HelperAidRequest'
+          description: ''
+        '400':
+          description: Ошибка валидации
+        '403':
+          description: Недостаточно прав
+        '404':
+          description: Заявка не найдена
+  /api/requests/moderation/{request_id}/:
+    post:
+      operationId: moderation_request_decide
+      description: 'Moderator/admin: approve или reject заявки в очереди модерации'
+      summary: Модерация заявки
+      parameters:
+      - in: path
+        name: request_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - request-moderation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModerationAction'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ModerationAction'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ModerationAction'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusTransitionResponse'
+          description: ''
+        '400':
+          description: Ошибка валидации или недопустимый lifecycle-переход
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FraudPolicyError'
+          description: 'Approve запрещён: effective action=block (fraud_publication_blocked)
+            или решение отсутствует (fraud_decision_missing)'
+        '403':
+          description: Недостаточно прав
+        '404':
+          description: Заявка не найдена
+  /api/requests/moderation/queue/:
+    get:
+      operationId: requests_moderation_queue_list
+      parameters:
+      - in: query
+        name: category
+        schema:
+          type: string
+          enum:
+          - children
+          - clothes
+          - food
+          - medicine
+          - other
+        description: |-
+          * `food` - Еда
+          * `children` - Детские товары
+          * `medicine` - Лекарства
+          * `clothes` - Одежда
+          * `other` - Другое
+      - in: query
+        name: is_flagged
+        schema:
+          type: boolean
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - requests
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedModeratorAidRequestList'
+          description: ''
+  /api/requests/published/:
+    get:
+      operationId: requests_published_list
+      parameters:
+      - in: query
+        name: category
+        schema:
+          type: string
+          enum:
+          - children
+          - clothes
+          - food
+          - medicine
+          - other
+        description: |-
+          * `food` - Еда
+          * `children` - Детские товары
+          * `medicine` - Лекарства
+          * `clothes` - Одежда
+          * `other` - Другое
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - requests
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedHelperAidRequestList'
+          description: ''
+components:
+  schemas:
+    AidRequestCreate:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        category:
+          $ref: '#/components/schemas/RequestCategoryEnum'
+        title:
+          type: string
+          maxLength: 180
+        description:
+          type: string
+        region:
+          type: string
+          maxLength: 120
+        requested_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        urgency:
+          type: integer
+          maximum: 5
+          minimum: 1
+        status:
+          allOf:
+          - $ref: '#/components/schemas/AidRequestStatusEnum'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - category
+      - created_at
+      - description
+      - id
+      - region
+      - status
+      - title
+      - updated_at
+      - urgency
+    AidRequestStatusEnum:
+      enum:
+      - draft
+      - on_moderation
+      - published
+      - in_progress
+      - closed
+      - rejected
+      type: string
+      description: |-
+        * `draft` - Черновик
+        * `on_moderation` - На модерации
+        * `published` - Опубликована
+        * `in_progress` - В работе
+        * `closed` - Закрыта
+        * `rejected` - Отклонена
+    ApplicantAidRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        category:
+          allOf:
+          - $ref: '#/components/schemas/RequestCategoryEnum'
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+        region:
+          type: string
+          readOnly: true
+        requested_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        urgency:
+          type: integer
+          readOnly: true
+          description: Срочность от 1 до 5
+        status:
+          allOf:
+          - $ref: '#/components/schemas/AidRequestStatusEnum'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - category
+      - created_at
+      - description
+      - id
+      - region
+      - requested_amount
+      - status
+      - title
+      - updated_at
+      - urgency
+    ApplicantDeliveredFulfillment:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        provider_name:
+          type: string
+          readOnly: true
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/FulfillmentStatusEnum'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        delivered_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        confirmed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        certificate_code:
+          type: string
+          format: uuid
+          readOnly: true
+      required:
+      - amount
+      - certificate_code
+      - confirmed_at
+      - created_at
+      - delivered_at
+      - id
+      - provider_name
+      - status
+    ApplicantFulfillmentResponse:
+      oneOf:
+      - $ref: '#/components/schemas/ApplicantPreparedFulfillment'
+      - $ref: '#/components/schemas/ApplicantDeliveredFulfillment'
+    ApplicantPreparedFulfillment:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        provider_name:
+          type: string
+          readOnly: true
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/FulfillmentStatusEnum'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        delivered_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        confirmed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - amount
+      - confirmed_at
+      - created_at
+      - delivered_at
+      - id
+      - provider_name
+      - status
+    ApplicantProfile:
+      type: object
+      properties:
+        household_size:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 1
+          format: int64
+        dependents_count:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        consent_to_data_processing:
+          type: boolean
+        region:
+          type: string
+          readOnly: true
+        verification_status:
+          allOf:
+          - $ref: '#/components/schemas/ApplicantVerificationStatusEnum'
+          readOnly: true
+        latest_verification:
+          allOf:
+          - $ref: '#/components/schemas/ApplicantVerificationSummary'
+          nullable: true
+          readOnly: true
+      required:
+      - latest_verification
+      - region
+      - verification_status
+    ApplicantRequestStatusHistory:
+      type: object
+      properties:
+        from_status:
+          type: string
+          readOnly: true
+        to_status:
+          type: string
+          readOnly: true
+        changed_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - changed_at
+      - from_status
+      - to_status
+    ApplicantVerificationHistory:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/VerificationStatusEnum'
+          readOnly: true
+        submitted_at:
+          type: string
+          format: date-time
+          readOnly: true
+        reviewed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        comment:
+          type: string
+          readOnly: true
+      required:
+      - comment
+      - id
+      - reviewed_at
+      - status
+      - submitted_at
+    ApplicantVerificationStatusEnum:
+      enum:
+      - not_submitted
+      - pending
+      - verified
+      - rejected
+      type: string
+      description: |-
+        * `not_submitted` - not_submitted
+        * `pending` - pending
+        * `verified` - verified
+        * `rejected` - rejected
+    ApplicantVerificationSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/VerificationStatusEnum'
+          readOnly: true
+        submitted_at:
+          type: string
+          format: date-time
+          readOnly: true
+        reviewed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        comment:
+          type: string
+          readOnly: true
+      required:
+      - comment
+      - id
+      - reviewed_at
+      - status
+      - submitted_at
+    CodeEnum:
+      enum:
+      - fraud_publication_blocked
+      - fraud_decision_missing
+      type: string
+      description: |-
+        * `fraud_publication_blocked` - fraud_publication_blocked
+        * `fraud_decision_missing` - fraud_decision_missing
+    DecisionEnum:
+      enum:
+      - verified
+      - rejected
+      type: string
+      description: |-
+        * `verified` - verified
+        * `rejected` - rejected
+    FraudActionEnum:
+      enum:
+      - allow
+      - manual_review
+      - block
+      type: string
+      description: |-
+        * `allow` - Allow
+        * `manual_review` - Manual review
+        * `block` - Block
+    FraudCheck:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        signal_code:
+          type: string
+          maxLength: 64
+        weight:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        value: {}
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - signal_code
+    FraudDecision:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        score:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        risk_level:
+          $ref: '#/components/schemas/FraudRiskLevelEnum'
+        base_action:
+          $ref: '#/components/schemas/FraudActionEnum'
+        action:
+          $ref: '#/components/schemas/FraudActionEnum'
+        is_overridden:
+          type: boolean
+        reasons: {}
+        engine_version:
+          type: string
+          maxLength: 32
+        decided_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - decided_at
+      - id
+    FraudOverride:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        old_action:
+          allOf:
+          - $ref: '#/components/schemas/FraudActionEnum'
+          readOnly: true
+        new_action:
+          $ref: '#/components/schemas/FraudActionEnum'
+        comment:
+          type: string
+        changed_by:
+          type: integer
+          readOnly: true
+        changed_by_username:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - changed_by
+      - changed_by_username
+      - comment
+      - created_at
+      - id
+      - new_action
+      - old_action
+    FraudOverrideCreate:
+      type: object
+      properties:
+        new_action:
+          $ref: '#/components/schemas/FraudActionEnum'
+        comment:
+          type: string
+          description: Обязательная причина ручного изменения решения.
+          minLength: 1
+      required:
+      - comment
+      - new_action
+    FraudPolicyError:
+      type: object
+      properties:
+        code:
+          allOf:
+          - $ref: '#/components/schemas/CodeEnum'
+          readOnly: true
+        detail:
+          type: string
+          readOnly: true
+      required:
+      - code
+      - detail
+    FraudRecheckFailure:
+      type: object
+      properties:
+        detail:
+          type: string
+          readOnly: true
+      required:
+      - detail
+    FraudRecheckResponse:
+      oneOf:
+      - $ref: '#/components/schemas/FraudDecision'
+      - $ref: '#/components/schemas/FraudRecheckFailure'
+    FraudRiskLevelEnum:
+      enum:
+      - low
+      - medium
+      - high
+      - critical
+      type: string
+      description: |-
+        * `low` - Low
+        * `medium` - Medium
+        * `high` - High
+        * `critical` - Critical
+    FulfillmentCreate:
+      type: object
+      properties:
+        provider_name:
+          type: string
+          maxLength: 120
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+      required:
+      - amount
+      - provider_name
+    FulfillmentError:
+      type: object
+      properties:
+        code:
+          type: string
+          readOnly: true
+        detail:
+          type: string
+          readOnly: true
+      required:
+      - code
+      - detail
+    FulfillmentStatusEnum:
+      enum:
+      - created
+      - delivered
+      - confirmed
+      type: string
+      description: |-
+        * `created` - Создан
+        * `delivered` - Передан
+        * `confirmed` - Получение подтверждено
+    FulfillmentTypeEnum:
+      enum:
+      - mock_certificate
+      type: string
+      description: '* `mock_certificate` - Демонстрационный сертификат'
+    HelpCommit:
+      type: object
+      properties:
+        method:
+          $ref: '#/components/schemas/MethodEnum'
+        note:
+          type: string
+          default: ''
+      required:
+      - method
+    HelperAidRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        category:
+          allOf:
+          - $ref: '#/components/schemas/RequestCategoryEnum'
+          readOnly: true
+        region:
+          type: string
+          readOnly: true
+        requested_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        urgency:
+          type: integer
+          readOnly: true
+          description: Срочность от 1 до 5
+        status:
+          allOf:
+          - $ref: '#/components/schemas/AidRequestStatusEnum'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - category
+      - created_at
+      - id
+      - region
+      - requested_amount
+      - status
+      - title
+      - urgency
+    HelperFulfillment:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        fulfillment_type:
+          allOf:
+          - $ref: '#/components/schemas/FulfillmentTypeEnum'
+          readOnly: true
+        provider_name:
+          type: string
+          readOnly: true
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/FulfillmentStatusEnum'
+          readOnly: true
+        masked_certificate_code:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        delivered_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        confirmed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - amount
+      - confirmed_at
+      - created_at
+      - delivered_at
+      - fulfillment_type
+      - id
+      - masked_certificate_code
+      - provider_name
+      - status
+    HelperRequestStatusHistory:
+      type: object
+      properties:
+        from_status:
+          type: string
+          readOnly: true
+        to_status:
+          type: string
+          readOnly: true
+        changed_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - changed_at
+      - from_status
+      - to_status
+    Me:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          title: Имя пользователя
+          description: Обязательное поле. Не более 150 символов. Только буквы, цифры
+            и символы @/./+/-/_.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          title: Адрес электронной почты
+          maxLength: 254
+        role:
+          $ref: '#/components/schemas/UserRoleEnum'
+        region:
+          type: string
+          maxLength: 120
+      required:
+      - id
+      - username
+    MethodEnum:
+      enum:
+      - certificate
+      - cart
+      - invoice
+      - mock
+      type: string
+      description: |-
+        * `certificate` - certificate
+        * `cart` - cart
+        * `invoice` - invoice
+        * `mock` - mock
+    ModerationAction:
+      type: object
+      properties:
+        action:
+          $ref: '#/components/schemas/ModerationActionActionEnum'
+        comment:
+          type: string
+          default: ''
+      required:
+      - action
+    ModerationActionActionEnum:
+      enum:
+      - approve
+      - reject
+      type: string
+      description: |-
+        * `approve` - approve
+        * `reject` - reject
+    ModeratorAidRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        category:
+          allOf:
+          - $ref: '#/components/schemas/RequestCategoryEnum'
+          readOnly: true
+        region:
+          type: string
+          readOnly: true
+        requested_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        urgency:
+          type: integer
+          readOnly: true
+          description: Срочность от 1 до 5
+        status:
+          allOf:
+          - $ref: '#/components/schemas/AidRequestStatusEnum'
+          readOnly: true
+        risk_score:
+          type: integer
+          readOnly: true
+        is_flagged:
+          type: boolean
+          readOnly: true
+        applicant_username:
+          type: string
+          readOnly: true
+        applicant_verification_status:
+          allOf:
+          - $ref: '#/components/schemas/ApplicantVerificationStatusEnum'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - applicant_username
+      - applicant_verification_status
+      - category
+      - created_at
+      - id
+      - is_flagged
+      - region
+      - requested_amount
+      - risk_score
+      - status
+      - title
+      - urgency
+    ModeratorFulfillment:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        request_id:
+          type: integer
+          readOnly: true
+        fulfillment_type:
+          allOf:
+          - $ref: '#/components/schemas/FulfillmentTypeEnum'
+          readOnly: true
+        provider_name:
+          type: string
+          readOnly: true
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/FulfillmentStatusEnum'
+          readOnly: true
+        certificate_code:
+          type: string
+          format: uuid
+          readOnly: true
+        helper_id:
+          type: integer
+          readOnly: true
+        helper_username:
+          type: string
+          readOnly: true
+        applicant_id:
+          type: integer
+          readOnly: true
+        applicant_username:
+          type: string
+          readOnly: true
+        created_by_id:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        delivered_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        confirmed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - amount
+      - applicant_id
+      - applicant_username
+      - certificate_code
+      - confirmed_at
+      - created_at
+      - created_by_id
+      - delivered_at
+      - fulfillment_type
+      - helper_id
+      - helper_username
+      - id
+      - provider_name
+      - request_id
+      - status
+    ModeratorRequestStatusHistory:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        from_status:
+          type: string
+          readOnly: true
+        to_status:
+          type: string
+          readOnly: true
+        comment:
+          type: string
+          readOnly: true
+        changed_at:
+          type: string
+          format: date-time
+          readOnly: true
+        changed_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        changed_by_username:
+          type: string
+          readOnly: true
+        changed_by_role:
+          type: string
+          readOnly: true
+      required:
+      - changed_at
+      - changed_by
+      - changed_by_role
+      - changed_by_username
+      - comment
+      - from_status
+      - id
+      - to_status
+    ModeratorVerification:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        applicant_user_id:
+          type: integer
+          readOnly: true
+        applicant_username:
+          type: string
+          readOnly: true
+        region:
+          type: string
+          readOnly: true
+        household_size:
+          type: integer
+          readOnly: true
+        dependents_count:
+          type: integer
+          readOnly: true
+        consent_to_data_processing:
+          type: boolean
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/VerificationStatusEnum'
+          readOnly: true
+        submitted_at:
+          type: string
+          format: date-time
+          readOnly: true
+        reviewed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        reviewed_by:
+          type: integer
+          readOnly: true
+        review_comment:
+          type: string
+          readOnly: true
+      required:
+      - applicant_user_id
+      - applicant_username
+      - consent_to_data_processing
+      - dependents_count
+      - household_size
+      - id
+      - region
+      - review_comment
+      - reviewed_at
+      - reviewed_by
+      - status
+      - submitted_at
+    PaginatedApplicantAidRequestList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ApplicantAidRequest'
+    PaginatedFraudCheckList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/FraudCheck'
+    PaginatedHelperAidRequestList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/HelperAidRequest'
+    PaginatedModeratorAidRequestList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModeratorAidRequest'
+    PaginatedModeratorVerificationList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModeratorVerification'
+    PatchedApplicantProfile:
+      type: object
+      properties:
+        household_size:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 1
+          format: int64
+        dependents_count:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        consent_to_data_processing:
+          type: boolean
+        region:
+          type: string
+          readOnly: true
+        verification_status:
+          allOf:
+          - $ref: '#/components/schemas/ApplicantVerificationStatusEnum'
+          readOnly: true
+        latest_verification:
+          allOf:
+          - $ref: '#/components/schemas/ApplicantVerificationSummary'
+          nullable: true
+          readOnly: true
+    ReceiptConfirmation:
+      type: object
+      properties:
+        request_status:
+          type: string
+          readOnly: true
+        fulfillment_status:
+          type: string
+          readOnly: true
+      required:
+      - fulfillment_status
+      - request_status
+    Register:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          title: Имя пользователя
+          description: Обязательное поле. Не более 150 символов. Только буквы, цифры
+            и символы @/./+/-/_.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          title: Адрес электронной почты
+          maxLength: 254
+        password:
+          type: string
+          writeOnly: true
+          minLength: 8
+        role:
+          allOf:
+          - $ref: '#/components/schemas/RegisterRoleEnum'
+          default: applicant
+        region:
+          type: string
+          maxLength: 120
+      required:
+      - id
+      - password
+      - username
+    RegisterRoleEnum:
+      enum:
+      - applicant
+      - helper
+      type: string
+      description: |-
+        * `applicant` - applicant
+        * `helper` - helper
+    RequestCategoryEnum:
+      enum:
+      - food
+      - children
+      - medicine
+      - clothes
+      - other
+      type: string
+      description: |-
+        * `food` - Еда
+        * `children` - Детские товары
+        * `medicine` - Лекарства
+        * `clothes` - Одежда
+        * `other` - Другое
+    RequestHistoryByRole:
+      oneOf:
+      - $ref: '#/components/schemas/ApplicantRequestStatusHistory'
+      - $ref: '#/components/schemas/HelperRequestStatusHistory'
+      - $ref: '#/components/schemas/ModeratorRequestStatusHistory'
+    StatusTransitionResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        new_status:
+          type: string
+          readOnly: true
+      required:
+      - id
+      - new_status
+    TokenObtainPair:
+      type: object
+      properties:
+        username:
+          type: string
+          writeOnly: true
+        password:
+          type: string
+          writeOnly: true
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          readOnly: true
+      required:
+      - access
+      - password
+      - refresh
+      - username
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          writeOnly: true
+      required:
+      - access
+      - refresh
+    UserRoleEnum:
+      enum:
+      - applicant
+      - helper
+      - moderator
+      - admin
+      type: string
+      description: |-
+        * `applicant` - Applicant
+        * `helper` - Helper
+        * `moderator` - Moderator
+        * `admin` - Admin
+    VerificationDecision:
+      type: object
+      properties:
+        decision:
+          $ref: '#/components/schemas/DecisionEnum'
+        comment:
+          type: string
+          default: ''
+          maxLength: 1000
+      required:
+      - decision
+    VerificationError:
+      type: object
+      properties:
+        code:
+          type: string
+          readOnly: true
+        detail:
+          type: string
+          readOnly: true
+      required:
+      - code
+      - detail
+    VerificationStatusEnum:
+      enum:
+      - pending
+      - verified
+      - rejected
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `verified` - Verified
+        * `rejected` - Rejected
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

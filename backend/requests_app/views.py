@@ -149,6 +149,8 @@ class ModerateRequestView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsModerator]
 
     @extend_schema(
+        operation_id="moderation_request_decide",
+        tags=["request-moderation"],
         request=ModerationActionSerializer,
         responses={
             200: StatusTransitionResponseSerializer,
@@ -215,6 +217,8 @@ class TakeRequestIntoWorkView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsHelper]
     
     @extend_schema(
+        operation_id="helper_request_take",
+        tags=["helper-requests"],
         request=HelpCommitSerializer,
         responses={
             200: HelperAidRequestSerializer,
@@ -265,6 +269,8 @@ class CloseRequestView(APIView):
     permission_classes = [IsAuthenticated, CanCloseRequest]
 
     @extend_schema(
+        operation_id="applicant_receipt_confirm_deprecated",
+        tags=["applicant-fulfillment"],
         request=None,
         summary="Deprecated alias подтверждения получения",
         description="Applicant подтверждает получение; helper не может закрыть заявку.",
@@ -290,6 +296,8 @@ class RequestHistoryView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
+        operation_id="request_history_retrieve",
+        tags=["request-history"],
         responses=PolymorphicProxySerializer(
             component_name="RequestHistoryByRole",
             serializers=[

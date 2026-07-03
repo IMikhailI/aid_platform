@@ -2,7 +2,7 @@ from decimal import Decimal
 
 from rest_framework import serializers
 
-from requests_app.models import AidFulfillment, FulfillmentStatus
+from requests_app.models import AidFulfillment
 
 
 def mask_certificate_code(value) -> str:
@@ -32,20 +32,21 @@ class HelperFulfillmentSerializer(serializers.ModelSerializer):
         return mask_certificate_code(obj.certificate_code)
 
 
-class ApplicantFulfillmentSerializer(serializers.ModelSerializer):
+class ApplicantPreparedFulfillmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = AidFulfillment
         fields = (
-            "id", "provider_name", "amount", "status", "certificate_code",
+            "id", "provider_name", "amount", "status",
             "created_at", "delivered_at", "confirmed_at",
         )
         read_only_fields = fields
 
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        if instance.status == FulfillmentStatus.CREATED:
-            data.pop("certificate_code", None)
-        return data
+
+class ApplicantDeliveredFulfillmentSerializer(ApplicantPreparedFulfillmentSerializer):
+    certificate_code = serializers.UUIDField(read_only=True)
+
+    class Meta(ApplicantPreparedFulfillmentSerializer.Meta):
+        fields = ApplicantPreparedFulfillmentSerializer.Meta.fields + ("certificate_code",)
 
 
 class ModeratorFulfillmentSerializer(serializers.ModelSerializer):

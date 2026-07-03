@@ -33,12 +33,18 @@ class ApplicantProfileView(generics.RetrieveUpdateAPIView):
         return profile
 
     @extend_schema(
+        operation_id="applicant_profile_retrieve",
+        tags=["applicant-profile"],
+        summary="Получить профиль текущего applicant",
         responses={200: ApplicantProfileSerializer, 403: OpenApiResponse(description="Недостаточно прав")}
     )
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
     @extend_schema(
+        operation_id="applicant_profile_update",
+        tags=["applicant-profile"],
+        summary="Обновить профиль текущего applicant",
         request=ApplicantProfileSerializer,
         responses={
             200: ApplicantProfileSerializer,
@@ -54,6 +60,9 @@ class ApplicantVerificationSubmitView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsApplicant]
 
     @extend_schema(
+        operation_id="applicant_verification_submit",
+        tags=["applicant-verification"],
+        summary="Отправить профиль на верификацию",
         request=None,
         responses={
             201: ApplicantVerificationSummarySerializer,
@@ -83,6 +92,9 @@ class ApplicantVerificationHistoryView(generics.ListAPIView):
     filter_backends = []
 
     @extend_schema(
+        operation_id="applicant_verification_history",
+        tags=["applicant-verification"],
+        summary="Получить собственную историю верификации",
         responses={
             200: ApplicantVerificationHistorySerializer(many=True),
             403: OpenApiResponse(description="Недостаточно прав"),
@@ -105,6 +117,9 @@ class ModeratorVerificationQueueView(generics.ListAPIView):
     ordering = ["-submitted_at", "-id"]
 
     @extend_schema(
+        operation_id="moderation_verification_list",
+        tags=["moderation-verification"],
+        summary="Получить очередь верификаций",
         parameters=[
             OpenApiParameter(
                 name="status",
@@ -148,6 +163,9 @@ class ModeratorVerificationDetailView(generics.RetrieveAPIView):
     )
 
     @extend_schema(
+        operation_id="moderation_verification_retrieve",
+        tags=["moderation-verification"],
+        summary="Получить верификацию",
         responses={
             200: ModeratorVerificationSerializer,
             403: OpenApiResponse(description="Недостаточно прав"),
@@ -162,6 +180,9 @@ class ModeratorVerificationDecisionView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsModerator]
 
     @extend_schema(
+        operation_id="moderation_verification_decide",
+        tags=["moderation-verification"],
+        summary="Принять решение по верификации",
         request=VerificationDecisionSerializer,
         responses={
             200: ModeratorVerificationSerializer,

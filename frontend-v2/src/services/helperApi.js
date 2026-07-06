@@ -1,8 +1,19 @@
 import api from "./api";
 
 export async function getPublishedRequests(params = {}) {
+  const page = await getPublishedRequestsPage(params);
+  return page.results;
+}
+
+export async function getPublishedRequestsPage(params = {}) {
   const { data } = await api.get("/requests/published/", { params });
-  return Array.isArray(data) ? data : data.results || [];
+  if (Array.isArray(data)) return { count: data.length, next: null, previous: null, results: data };
+  return {
+    count: data.count || 0,
+    next: data.next || null,
+    previous: data.previous || null,
+    results: data.results || [],
+  };
 }
 
 export async function takeRequest(requestId, payload = {}) {
@@ -34,6 +45,7 @@ export async function deliverFulfillment(requestId) {
 export function getHelperApiError(error, fallback = "Не удалось выполнить операцию.") {
   const messages = {
     401: "Сессия завершена. Войдите снова.",
+    400: "Заявку нельзя взять в работу в её текущем состоянии.",
     403: "У вашей роли нет доступа к этой операции.",
     404: "Заявка не найдена или больше недоступна.",
     409: "Операция недоступна: состояние заявки уже изменилось.",

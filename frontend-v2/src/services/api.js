@@ -20,7 +20,13 @@ api.interceptors.response.use(
     const refresh = getRefreshToken();
     const isAuthRequest = request?.url?.includes("/auth/token/");
 
-    if (error.response?.status !== 401 || request?._retry || !refresh || isAuthRequest) {
+    if (error.response?.status !== 401 || isAuthRequest) {
+      return Promise.reject(error);
+    }
+
+    if (request?._retry || !refresh) {
+      clearAuth();
+      window.dispatchEvent(new Event("auth:logout"));
       return Promise.reject(error);
     }
 

@@ -5,6 +5,7 @@ import "./assets/styles/base.css";
 import "./assets/styles/landing.css";
 import "./assets/styles/app.css";
 import "./assets/styles/auth.css";
+import "./assets/styles/helper.css";
 
 createApp(App).use(router).mount("#app");
 

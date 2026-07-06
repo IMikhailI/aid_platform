@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Твоя помощь</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="header" role="banner">
+      <div class="container header__inner">
+        <div class="header__brand" aria-label="Логотип платформы Тихая помощь">
+          <span class="header__brand-mark" aria-hidden="true">
+            <img class="header__brand-icon" src="icons/logo-heart.svg" alt="" aria-hidden="true" />
+          </span>
+          <span class="header__brand-text">Тихая помощь</span>
+        </div>
+
+        <nav class="header__nav" role="navigation" aria-label="Основная навигация">
+          <span class="header__link">О платформе</span>
+        </nav>
+
+        <button class="header__button" type="button" aria-label="Войти в личный кабинет">
+          Войти
+        </button>
+      </div>
+    </header>
+
+    <main class="main" role="main" aria-label="Основной контент сайта">
+      <section class="hero" id="hero" aria-labelledby="hero-title">
+        <div class="container hero__container">
+          <div class="hero__content">
+            <p class="hero__eyebrow">Анонимная адресная помощь</p>
+            <h1 class="hero__title" id="hero-title">Платформа прозрачной помощи нуждающимся</h1>
+            <p class="hero__text">
+              Объединяем людей в сложной ситуации с благотворителями через
+              проверенных партнёров — НКО, фонды и социальные службы
+            </p>
+
+            <div class="hero__actions">
+              <button
+                class="hero__button hero__button--primary"
+                type="button"
+                aria-label="Получить помощь"
+              >
+                <img
+                  class="hero__button-icon hero__button-icon--light"
+                  src="icons/logo-heart.svg"
+                  alt=""
+                  aria-hidden="true"
+                />
+                Получить помощь
+              </button>
+              <button
+                class="hero__button hero__button--secondary"
+                type="button"
+                aria-label="Помочь другим"
+              >
+                Помочь другим
+                <img
+                  class="hero__button-icon"
+                  src="icons/arrow-right.svg"
+                  alt=""
+                  aria-hidden="true"
+                />
+              </button>
+            </div>
+          </div>
+
+          <aside class="hero__aside" aria-label="Боковая карточка со статистикой платформы">
+            <div
+              class="hero-card"
+              role="group"
+              aria-label="Статистика платформы, оказано помощи 1.2 миллиона рублей"
+            >
+              <div class="hero-card__top">
+                <h2 class="hero-card__title">Статистика платформы</h2>
+                <div class="hero-card__live">
+                  <span class="hero-card__live-dot" aria-hidden="true"></span>
+                  <span>LIVE</span>
+                </div>
+              </div>
+
+              <div class="hero-card__tabs" role="group" aria-label="Период статистики">
+                <button class="hero-card__tab" type="button" aria-pressed="false">Неделя</button>
+                <button class="hero-card__tab" type="button" aria-pressed="false">Месяц</button>
+                <button
+                  class="hero-card__tab hero-card__tab--active"
+                  type="button"
+                  aria-pressed="true"
+                >
+                  Всё время
+                </button>
+              </div>
+
+              <p class="hero-card__label">Оказано помощи</p>
+              <p class="hero-card__amount">1.2M ₽</p>
+
+              <div class="hero-card__chart">
+                <img
+                  class="hero-card__chart-image"
+                  src="icons/graf.svg"
+                  alt="График оказанной помощи с января по июнь: рост до мая и снижение в июне"
+                />
+              </div>
+            </div>
+          </aside>
+        </div>
+
+        <div class="container">
+          <div class="metrics">
+            <article class="metrics__item">
+              <h2 class="metrics__value">2,847</h2>
+              <p class="metrics__label">Выполненных заявок</p>
+            </article>
+            <article class="metrics__item">
+              <h2 class="metrics__value">1.2M ₽</h2>
+              <p class="metrics__label">Оказано помощи</p>
+            </article>
+            <article class="metrics__item">
+              <h2 class="metrics__value">127</h2>
+              <p class="metrics__label">Партнёров</p>
+            </article>
+            <article class="metrics__item">
+              <h2 class="metrics__value">93%</h2>
+              <p class="metrics__label">Довольных пользователей</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="categories" id="categories" aria-labelledby="categories-title">
+        <div class="container">
+          <div class="section-heading">
+            <h2 class="section-heading__title" id="categories-title">Категории помощи</h2>
+            <p class="section-heading__text">
+              Помогаем закрыть основные базовые потребности нуждающихся
+            </p>
+          </div>
+
+          <div class="categories__grid">
+            <article class="category-card category-card--food">
+              <div class="category-card__icon" aria-hidden="true">
+                <img class="category-card__icon-image" src="icons/store.svg" alt="" aria-hidden="true" />
+              </div>
+              <h3 class="category-card__title">Еда</h3>
+              <p class="category-card__text">Продуктовые наборы, сертификаты в магазины</p>
+            </article>
+
+            <article class="category-card category-card--kids">
+              <div class="category-card__icon" aria-hidden="true">
+                <img class="category-card__icon-image" src="icons/baby-face.svg" alt="" aria-hidden="true"
+                />
+              </div>
+              <h3 class="category-card__title">Детские товары</h3>
+              <p class="category-card__text">Подгузники, питание, одежда, игрушки</p>
+            </article>
+
+            <article class="category-card category-card--medicine">
+              <div class="category-card__icon" aria-hidden="true">
+                <img class="category-card__icon-image" src="icons/pill.svg" alt="" aria-hidden="true" />
+              </div>
+              <h3 class="category-card__title">Лекарства</h3>
+              <p class="category-card__text">Оплата рецептов и счетов в аптеках</p>
+            </article>
+
+            <article class="category-card category-card--clothes">
+              <div class="category-card__icon" aria-hidden="true">
+                <img class="category-card__icon-image" src="icons/shirt.svg" alt="" aria-hidden="true" />
+              </div>
+              <h3 class="category-card__title">Одежда</h3>
+              <p class="category-card__text">Сезонная одежда и обувь для всей семьи</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="requests" id="requests" aria-labelledby="requests-title">
+        <div class="container">
+          <div class="section-heading">
+            <h2 class="section-heading__title" id="requests-title">Примеры запросов о помощи</h2>
+            <p class="section-heading__text">
+              Реальные заявки нуждающихся на платформе
+            </p>
+          </div>
+
+          <div class="requests__slider" data-carousel="requests">
+            <button
+              class="requests__arrow requests__arrow--prev"
+              type="button"
+              aria-label="Предыдущая страница запросов"
+              disabled
+            >
+              &lt;
+            </button>
+
+            <div class="requests__viewport">
+              <div class="requests__track">
+                <div class="requests__page">
+                  <article class="request-card">
+                    <div class="request-card__top">
+                      <p class="request-card__category">Еда</p>
+                      <p class="request-card__city">Москва</p>
+                    </div>
+                    <h3 class="request-card__title">Продукты для семьи</h3>
+                    <p class="request-card__text">
+                      Многодетная семья, 3 детей до 10 лет. Нужны продукты на месяц: крупы,
+                      макароны, консервы.
+                    </p>
+                    <div class="request-card__meta">
+                      <span>≈ 8 000 ₽</span>
+                      <span>Проверено НКО</span>
+                    </div>
+                  </article>
+
+                  <article class="request-card">
+                    <div class="request-card__top">
+                      <p class="request-card__category">Лекарства</p>
+                      <p class="request-card__city">Тюмень</p>
+                    </div>
+                    <h3 class="request-card__title">Оплата курса терапии</h3>
+                    <p class="request-card__text">
+                      Нужна оплата назначенных лекарств после выписки из стационара. Все рецепты
+                      и документы уже подтверждены.
+                    </p>
+                    <div class="request-card__meta">
+                      <span>≈ 5 300 ₽</span>
+                      <span>Проверено НКО</span>
+                    </div>
+                  </article>
+
+                  <article class="request-card">
+                    <div class="request-card__top">
+                      <p class="request-card__category">Детские товары</p>
+                      <p class="request-card__city">Екатеринбург</p>
+                    </div>
+                    <h3 class="request-card__title">Одежда для малыша</h3>
+                    <p class="request-card__text">
+                      Ребенок растет очень быстро, нужна зимняя одежда на 2 года: комбинезон,
+                      ботинки и термобелье.
+                    </p>
+                    <div class="request-card__meta">
+                      <span>≈ 6 000 ₽</span>
+                      <span>Проверено НКО</span>
+                    </div>
+                  </article>
+                </div>
+
+                <div class="requests__page">
+                  <article class="request-card">
+                    <div class="request-card__top">
+                      <p class="request-card__category">Одежда</p>
+                      <p class="request-card__city">Сургут</p>
+                    </div>
+                    <h3 class="request-card__title">Тёплая одежда к зиме</h3>
+                    <p class="request-card__text">
+                      Для одинокой мамы и двух детей нужно собрать зимний комплект одежды и обуви
+                      до начала холодов.
+                    </p>
+                    <div class="request-card__meta">
+                      <span>≈ 11 500 ₽</span>
+                      <span>Проверено НКО</span>
+                    </div>
+                  </article>
+
+                  <article class="request-card">
+                    <div class="request-card__top">
+                      <p class="request-card__category">Еда</p>
+                      <p class="request-card__city">Пермь</p>
+                    </div>
+                    <h3 class="request-card__title">Сертификат в супермаркет</h3>
+                    <p class="request-card__text">
+                      Семье нужен продуктовый сертификат, чтобы самостоятельно выбрать питание
+                      для ребёнка с особыми ограничениями.
+                    </p>
+                    <div class="request-card__meta">
+                      <span>≈ 7 000 ₽</span>
+                      <span>Проверено НКО</span>
+                    </div>
+                  </article>
+
+                  <article class="request-card">
+                    <div class="request-card__top">
+                      <p class="request-card__category">Гигиена</p>
+                      <p class="request-card__city">Казань</p>
+                    </div>
+                    <h3 class="request-card__title">Набор первой необходимости</h3>
+                    <p class="request-card__text">
+                      Для кризисного центра требуется набор бытовой химии, средств гигиены и
+                      подгузников для новоприбывшей семьи.
+                    </p>
+                    <div class="request-card__meta">
+                      <span>≈ 4 200 ₽</span>
+                      <span>Проверено НКО</span>
+                    </div>
+                  </article>
+                </div>
+              </div>
+            </div>
+
+            <button
+              class="requests__arrow requests__arrow--next"
+              type="button"
+              aria-label="Следующая страница запросов"
+            >
+              &gt;
+            </button>
+          </div>
+
+          <div class="requests__dots" role="group" aria-label="Страницы карусели запросов">
+            <button
+              class="requests__dot requests__dot--active"
+              type="button"
+              aria-label="Показать первую страницу запросов"
+              aria-current="true"
+            ></button>
+            <button
+              class="requests__dot"
+              type="button"
+              aria-label="Показать вторую страницу запросов"
+              aria-current="false"
+            ></button>
+          </div>
+        </div>
+      </section>
+
+      <section class="how" id="how" aria-labelledby="how-title">
+        <div class="container">
+          <div class="section-heading">
+            <h2 class="section-heading__title" id="how-title">Как это работает</h2>
+            <p class="section-heading__text">
+              Простой и прозрачный процесс оказания помощи
+            </p>
+          </div>
+
+          <div class="how__grid">
+            <article class="how-card">
+              <div class="how-card__icon" aria-hidden="true">
+                <img class="how-card__icon-image" src="icons/user.svg" alt="" aria-hidden="true" />
+              </div>
+              <h3 class="how-card__title">Для нуждающихся</h3>
+              <ul class="how-card__list">
+                <li class="how-card__item">Создайте запрос о помощи на платформе</li>
+                <li class="how-card__item">Партнерская НКО проверит вашу заявку</li>
+                <li class="how-card__item">Получите помощь от благотворителей</li>
+              </ul>
+            </article>
+
+            <article class="how-card">
+              <div class="how-card__icon" aria-hidden="true">
+                <img
+                  class="how-card__icon-image"
+                  src="icons/heart-outline.svg"
+                  alt=""
+                  aria-hidden="true"
+                />
+              </div>
+              <h3 class="how-card__title">Для благотворителей</h3>
+              <ul class="how-card__list">
+                <li class="how-card__item">Выберите проверенный запрос о помощи</li>
+                <li class="how-card__item">Откликнитесь и согласуйте детали</li>
+                <li class="how-card__item">Получите ответ об оказанной помощи</li>
+              </ul>
+            </article>
+
+            <article class="how-card">
+              <div class="how-card__icon" aria-hidden="true">
+                <img class="how-card__icon-image" src="icons/shield.svg" alt="" aria-hidden="true" />
+              </div>
+              <h3 class="how-card__title">Для НКО и фондов</h3>
+              <ul class="how-card__list">
+                <li class="how-card__item">Модерируйте заявки на платформе</li>
+                <li class="how-card__item">Проверяйте подлинность запросов</li>
+                <li class="how-card__item">Координируйте передачу помощи</li>
+              </ul>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="cta" id="support" aria-labelledby="cta-title">
+        <div class="container cta__inner">
+          <div>
+            <h2 class="cta__title" id="cta-title">Начните помогать уже сегодня</h2>
+            <p class="cta__text">
+              Каждая помощь важна. Выберите запрос и измените чью-то жизнь к
+              лучшему
+            </p>
+          </div>
+
+          <div class="cta__actions">
+            <button
+              class="cta__button cta__button--secondary"
+              type="button"
+              aria-label="Получить помощь"
+            >
+              <img
+                class="cta__button-icon cta__button-icon--light"
+                src="icons/logo-heart.svg"
+                alt=""
+                aria-hidden="true"
+              />
+              Получить помощь
+            </button>
+            <button
+              class="cta__button cta__button--primary"
+              type="button"
+              aria-label="Помочь другим"
+            >
+              Помочь другим
+              <img
+                class="cta__button-icon"
+                src="icons/arrow-right.svg"
+                alt=""
+                aria-hidden="true"
+              />
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="payments" aria-labelledby="payments-title">
+        <div class="container payments__grid">
+          <div class="payments__content">
+            <div class="section-heading section-heading--left">
+              <h2 class="section-heading__title" id="payments-title">
+                Как работают целевые платежи
+              </h2>
+              <p class="section-heading__text">
+                Никаких денежных переводов на карту — только прозрачная целевая
+                помощь. Мы гарантируем, что средства пойдут именно на заявленные
+                нужды через проверенных партнёров.
+              </p>
+            </div>
+          </div>
+
+          <div class="payments__cards">
+            <article class="payment-card">
+              <div class="payment-card__icon" aria-hidden="true">
+                <img class="payment-card__icon-image" src="icons/store.svg" alt="" aria-hidden="true" />
+              </div>
+              <div class="payment-card__body">
+                <h3 class="payment-card__title">Сертификаты в магазины</h3>
+                <p class="payment-card__text">
+                  Выдаем именные сертификаты на определенную сумму в партнерские
+                  супермаркеты. Человек сам выбирает нужные товары.
+                </p>
+              </div>
+            </article>
+
+            <article class="payment-card">
+              <div class="payment-card__icon" aria-hidden="true">
+                <img
+                  class="payment-card__icon-image"
+                  src="icons/package-box.svg"
+                  alt=""
+                  aria-hidden="true"
+                />
+              </div>
+              <div class="payment-card__body">
+                <h3 class="payment-card__title">Прямая оплата в магазине</h3>
+                <p class="payment-card__text">
+                  Благотворитель оплачивает конкретный список товаров через
+                  партнерский магазин. Нуждающийся забирает готовый заказ.
+                </p>
+              </div>
+            </article>
+
+            <article class="payment-card">
+              <div class="payment-card__icon" aria-hidden="true">
+                <img
+                  class="payment-card__icon-image"
+                  src="icons/file-text.svg"
+                  alt=""
+                  aria-hidden="true"
+                />
+              </div>
+              <div class="payment-card__body">
+                <h3 class="payment-card__title">Оплата счетов и рецептов</h3>
+                <p class="payment-card__text">
+                  Для лекарств оплачиваем счета в аптеках по рецепту врача. Для
+                  услуг — прямая оплата поставщику от лица благотворителя.
+                </p>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="safety" aria-labelledby="safety-title">
+        <div class="container">
+          <div class="section-heading">
+            <h2 class="section-heading__title" id="safety-title">Защита от мошенничества</h2>
+            <p class="section-heading__text">
+              Многоуровневая система проверки для безопасности всех участников
+            </p>
+          </div>
+
+          <div class="safety__grid">
+            <article class="safety-card">
+              <h3 class="safety-card__title">Целевые платежи</h3>
+              <p class="safety-card__text">
+                Нет прямых переводов, только оплата товаров и услуг через
+                партнеров
+              </p>
+            </article>
+
+            <article class="safety-card">
+              <h3 class="safety-card__title">Модерация НКО</h3>
+              <p class="safety-card__text">
+                Проверка каждой заявки партнёрскими организациями и соцслужбами
+              </p>
+            </article>
+
+            <article class="safety-card">
+              <h3 class="safety-card__title">Лимиты и контроль</h3>
+              <p class="safety-card__text">
+                Ограничения по суммам и частоте запросов для каждого пользователя
+              </p>
+            </article>
+
+            <article class="safety-card">
+              <h3 class="safety-card__title">Аналитика паттернов</h3>
+              <p class="safety-card__text">
+                Автоматическое отслеживание подозрительной активности
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="faq" id="faq" aria-labelledby="faq-title">
+        <div class="container">
+          <div class="section-heading">
+            <h2 class="section-heading__title" id="faq-title">Частые вопросы</h2>
+            <p class="section-heading__text">
+              Ответы на популярные вопросы о работе платформы
+            </p>
+          </div>
+
+          <div class="faq__list">
+            <article class="faq-item">
+              <button
+                class="faq-item__trigger"
+                id="faq-trigger-1"
+                type="button"
+                aria-expanded="false"
+                aria-controls="faq-answer-1"
+              >
+                <span class="faq-item__question">Как гарантируется анонимность нуждающихся?</span>
+                <img class="faq-item__icon" src="icons/chevron-right.svg" alt="" aria-hidden="true" />
+              </button>
+              <div
+                class="faq-item__panel"
+                id="faq-answer-1"
+                role="region"
+                aria-labelledby="faq-trigger-1"
+                hidden
+              >
+                Данные заявителей проверяются партнёрскими НКО, а публично отображается только
+                информация, необходимая для оказания помощи.
+              </div>
+            </article>
+
+            <article class="faq-item">
+              <button
+                class="faq-item__trigger"
+                id="faq-trigger-2"
+                type="button"
+                aria-expanded="false"
+                aria-controls="faq-answer-2"
+              >
+                <span class="faq-item__question">Почему нет прямых денежных переводов?</span>
+                <img class="faq-item__icon" src="icons/chevron-right.svg" alt="" aria-hidden="true" />
+              </button>
+              <div
+                class="faq-item__panel"
+                id="faq-answer-2"
+                role="region"
+                aria-labelledby="faq-trigger-2"
+                hidden
+              >
+                Платформа работает через целевые платежи, чтобы снизить риск мошенничества и
+                подтвердить, что помощь ушла по назначению.
+              </div>
+            </article>
+
+            <article class="faq-item">
+              <button
+                class="faq-item__trigger"
+                id="faq-trigger-3"
+                type="button"
+                aria-expanded="false"
+                aria-controls="faq-answer-3"
+              >
+                <span class="faq-item__question">Кто проверяет заявки на платформе?</span>
+                <img class="faq-item__icon" src="icons/chevron-right.svg" alt="" aria-hidden="true" />
+              </button>
+              <div
+                class="faq-item__panel"
+                id="faq-answer-3"
+                role="region"
+                aria-labelledby="faq-trigger-3"
+                hidden
+              >
+                Заявки проходят модерацию через партнёрские НКО, фонды и социальные службы.
+              </div>
+            </article>
+
+            <article class="faq-item">
+              <button
+                class="faq-item__trigger"
+                id="faq-trigger-4"
+                type="button"
+                aria-expanded="false"
+                aria-controls="faq-answer-4"
+              >
+                <span class="faq-item__question">
+                  Можно ли выбрать конкретного человека для помощи?
+                </span>
+                <img class="faq-item__icon" src="icons/chevron-right.svg" alt="" aria-hidden="true" />
+              </button>
+              <div
+                class="faq-item__panel"
+                id="faq-answer-4"
+                role="region"
+                aria-labelledby="faq-trigger-4"
+                hidden
+              >
+                Обычно помощь оказывается по проверенным запросам, а персональные данные
+                нуждающихся скрываются ради безопасности и конфиденциальности.
+              </div>
+            </article>
+
+            <article class="faq-item">
+              <button
+                class="faq-item__trigger"
+                id="faq-trigger-5"
+                type="button"
+                aria-expanded="false"
+                aria-controls="faq-answer-5"
+              >
+                <span class="faq-item__question">Какие документы нужны для создания заявки?</span>
+                <img class="faq-item__icon" src="icons/chevron-right.svg" alt="" aria-hidden="true" />
+              </button>
+              <div
+                class="faq-item__panel"
+                id="faq-answer-5"
+                role="region"
+                aria-labelledby="faq-trigger-5"
+                hidden
+              >
+                Точный список подтверждающих документов зависит от категории запроса и требований
+                партнёрской организации.
+              </div>
+            </article>
+
+            <article class="faq-item">
+              <button
+                class="faq-item__trigger"
+                id="faq-trigger-6"
+                type="button"
+                aria-expanded="false"
+                aria-controls="faq-answer-6"
+              >
+                <span class="faq-item__question">Есть ли лимиты на сумму помощи?</span>
+                <img class="faq-item__icon" src="icons/chevron-right.svg" alt="" aria-hidden="true" />
+              </button>
+              <div
+                class="faq-item__panel"
+                id="faq-answer-6"
+                role="region"
+                aria-labelledby="faq-trigger-6"
+                hidden
+              >
+                Да, существуют разумные лимиты по суммам и частоте запросов для каждого
+                пользователя.
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <footer class="footer" id="contacts" role="contentinfo" aria-label="Подвал сайта">
+      <div class="container">
+        <div class="footer__inner">
+          <div class="footer__column footer__column--brand">
+            <div class="footer__brand" aria-label="Логотип платформы Тихая помощь">
+              <span class="footer__brand-mark" aria-hidden="true">
+                <img class="footer__brand-icon" src="icons/logo-heart.svg" alt="" aria-hidden="true" />
+              </span>
+              <span class="footer__brand-text">Тихая помощь</span>
+            </div>
+            <p class="footer__description">
+              Платформа прозрачной анонимной помощи нуждающимся
+            </p>
+          </div>
+
+          <div class="footer__column">
+            <h2 class="footer__title">Навигация</h2>
+            <p class="footer__link">О платформе</p>
+            <p class="footer__link">Помочь другому</p>
+            <p class="footer__link">Получить помощь</p>
+          </div>
+
+          <div class="footer__column">
+            <h2 class="footer__title">Поддержка</h2>
+            <p class="footer__link">Частые вопросы</p>
+            <p class="footer__link">Политика конфиденциальности</p>
+            <p class="footer__link">Условия использования</p>
+          </div>
+
+          <div class="footer__column">
+            <h2 class="footer__title">Контакты</h2>
+            <p class="footer__link footer__link--icon">
+              <img class="footer__contact-icon--image" src="icons/mail.svg" alt="" aria-hidden="true" />
+              <span>help@help.ru</span>
+            </p>
+            <p class="footer__link footer__link--icon">
+              <img class="footer__contact-icon--image" src="icons/phone.svg" alt="" aria-hidden="true" />
+              <span>+7 (000) 000-00-00</span>
+            </p>
+            <p class="footer__link footer__link--icon">
+              <img
+                class="footer__contact-icon--image"
+                src="icons/map-pin.svg"
+                alt=""
+                aria-hidden="true"
+              />
+              <span>Сургут, Россия</span>
+            </p>
+          </div>
+        </div>
+
+        <div class="footer__bottom">
+          <p class="footer__copyright">© 2026 Тихая помощь. Все права защищены.</p>
+          <div class="footer__socials">
+            <span class="footer__social">Telegram</span>
+            <span class="footer__social">VK</span>
+            <span class="footer__social">OK</span>
+          </div>
+        </div>
+      </div>
+    </footer>
+    <script src="script.js"></script>
+  </body>
+</html>

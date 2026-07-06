@@ -31,3 +31,11 @@ npm run dev
 Списка заявок, уже взятых helper, и серверной статистики пока нет, поэтому «Обзор» и «Моя помощь» содержат нейтральные состояния без выдуманных данных. Настройки показывают read-only данные из `/auth/me/`.
 
 Сохранённые заявки — локальная функция frontend-v2: в `localStorage` хранятся только ID заявок. Серверной синхронизации favorites пока нет.
+
+## Кабинет получателя помощи
+
+Маршруты `/applicant/overview`, `/applicant/requests`, `/applicant/history` и `/applicant/settings` доступны только роли `applicant`. Корневой `/applicant` перенаправляет на обзор.
+
+Интерфейс использует `GET/PATCH /api/applicant/profile/`, `POST /api/applicant/verification/submit/`, `GET /api/applicant/verification/history/`, `GET /api/requests/applicant/my/`, `POST /api/requests/applicant/create/`, `GET /api/applicant/requests/{id}/fulfillment/` и `POST /api/applicant/requests/{id}/confirm-receipt/`.
+
+Создание заявки отправляет её на модерацию, а подтверждение получения закрывает заявку. Верификация реализована в демонстрационном формате без документов и интеграции с Госуслугами. Личность помощника, внутренние поля модерации и код сертификата до передачи помощи не отображаются.

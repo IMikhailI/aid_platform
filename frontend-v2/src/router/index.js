@@ -5,7 +5,18 @@ const routes = [
   { path: "/", component: () => import("../pages/public/LandingPage.vue"), meta: { layout: "public" } },
   { path: "/login", component: () => import("../pages/auth/LoginPage.vue"), meta: { guest: true } },
   { path: "/register", component: () => import("../pages/auth/RegisterPage.vue"), meta: { guest: true } },
-  { path: "/applicant", component: () => import("../pages/applicant/ApplicantDashboard.vue"), meta: { auth: true, roles: ["applicant"] } },
+  {
+    path: "/applicant",
+    component: () => import("../layouts/ApplicantLayout.vue"),
+    meta: { auth: true, roles: ["applicant"] },
+    children: [
+      { path: "", redirect: "/applicant/overview" },
+      { path: "overview", component: () => import("../pages/applicant/ApplicantOverviewPage.vue") },
+      { path: "requests", component: () => import("../pages/applicant/ApplicantRequestsPage.vue") },
+      { path: "history", component: () => import("../pages/applicant/ApplicantAidHistoryPage.vue") },
+      { path: "settings", component: () => import("../pages/applicant/ApplicantSettingsPage.vue") },
+    ],
+  },
   {
     path: "/helper",
     component: () => import("../layouts/HelperLayout.vue"),

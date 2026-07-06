@@ -7,6 +7,7 @@ import "./assets/styles/app.css";
 import "./assets/styles/auth.css";
 import "./assets/styles/helper.css";
 import "./assets/styles/helper-requests.css";
+import "./assets/styles/applicant.css";
 
 createApp(App).use(router).mount("#app");
 

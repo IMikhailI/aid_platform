@@ -7,6 +7,7 @@ import "./assets/styles/app.css";
 import "./assets/styles/auth.css";
 import "./assets/styles/helper.css";
 import "./assets/styles/helper-requests.css";
+import "./assets/styles/helper-my-help.css";
 import "./assets/styles/applicant.css";
 import "./assets/styles/moderator.css";
 

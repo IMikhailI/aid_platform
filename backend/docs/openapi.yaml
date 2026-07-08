@@ -386,6 +386,39 @@ paths:
           description: Недостаточно прав
         '404':
           description: Заявка не найдена
+  /api/helper/my-help/:
+    get:
+      operationId: helper_owned_requests_list
+      description: Privacy-safe список собственных HelpCommitment с безопасной сводкой
+        fulfillment. Applicant identity, fraud, verification, telemetry и полный certificate_code
+        не возвращаются.
+      summary: Получить заявки, взятые текущим helper
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - helper-requests
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedHelperOwnedRequestList'
+          description: ''
+        '403':
+          description: Недостаточно прав
   /api/helper/requests/{request_id}/fulfillment/:
     get:
       operationId: helper_fulfillment_retrieve
@@ -1586,6 +1619,97 @@ components:
       - masked_certificate_code
       - provider_name
       - status
+    HelperOwnedRequest:
+      type: object
+      properties:
+        request_id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        category:
+          type: string
+          readOnly: true
+        region:
+          type: string
+          readOnly: true
+        requested_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        urgency:
+          type: integer
+          readOnly: true
+        request_status:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        taken_at:
+          type: string
+          format: date-time
+          readOnly: true
+        commitment_method:
+          type: string
+          readOnly: true
+        commitment_note:
+          type: string
+          readOnly: true
+        fulfillment_status:
+          type: string
+          readOnly: true
+          description: 'Без fulfillment: none; иначе created, delivered или confirmed.'
+        fulfillment_type:
+          type: string
+          readOnly: true
+          nullable: true
+        provider_name:
+          type: string
+          readOnly: true
+          nullable: true
+        fulfillment_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+          nullable: true
+        masked_certificate_code:
+          type: string
+          nullable: true
+          readOnly: true
+        delivered_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        confirmed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - category
+      - commitment_method
+      - commitment_note
+      - confirmed_at
+      - created_at
+      - delivered_at
+      - fulfillment_amount
+      - fulfillment_status
+      - fulfillment_type
+      - masked_certificate_code
+      - provider_name
+      - region
+      - request_id
+      - request_status
+      - requested_amount
+      - taken_at
+      - title
+      - urgency
     HelperRequestStatusHistory:
       type: object
       properties:
@@ -1955,6 +2079,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/HelperAidRequest'
+    PaginatedHelperOwnedRequestList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/HelperOwnedRequest'
     PaginatedModeratorAidRequestList:
       type: object
       required:

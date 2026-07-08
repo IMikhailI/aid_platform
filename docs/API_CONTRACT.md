@@ -84,6 +84,7 @@ moderator/admin в служебном read-only контракте.
 |---|---|---|---|---|---|---|---|
 | GET | `/api/requests/published/` | Privacy-safe feed | helper/admin | filters | HelperAidRequest[] | 403 | active |
 | POST | `/api/requests/helper/take/{request_id}/` | Принять заявку | helper/admin | method, note? | HelperAidRequest | 400, 403, 404 | active |
+| GET | `/api/helper/my-help/` | Собственные взятые заявки и safe fulfillment summary | helper | page?, page_size? | HelperOwnedRequest[] | 401, 403 | active |
 
 ### Fulfillment
 
@@ -133,6 +134,7 @@ moderator/admin в служебном read-only контракте.
 | create/own request list | own | запрещено | запрещено | запрещено |
 | published feed | запрещено | разрешено | запрещено | разрешено |
 | take request | запрещено | разрешено | запрещено | разрешено |
+| list own commitments | запрещено | own | запрещено | запрещено |
 | create/deliver certificate | запрещено | own | запрещено | запрещено |
 | confirm receipt | own | запрещено | запрещено | запрещено |
 | verification submit/history | own | запрещено | запрещено | запрещено |

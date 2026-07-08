@@ -5,11 +5,13 @@ from requests_app.fulfillment_views import (
     ApplicantFulfillmentView,
     HelperFulfillmentDeliverView,
     HelperFulfillmentView,
+    HelperOwnedRequestsView,
     ModeratorFulfillmentView,
 )
 
 
 helper_fulfillment_urlpatterns = [
+    path("my-help/", HelperOwnedRequestsView.as_view(), name="helper-my-help"),
     path("requests/<int:request_id>/fulfillment/", HelperFulfillmentView.as_view()),
     path("requests/<int:request_id>/fulfillment/deliver/", HelperFulfillmentDeliverView.as_view()),
 ]

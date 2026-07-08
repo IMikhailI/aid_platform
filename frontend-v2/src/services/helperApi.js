@@ -16,6 +16,17 @@ export async function getPublishedRequestsPage(params = {}) {
   };
 }
 
+export async function getMyHelp(params = {}) {
+  const { data } = await api.get("/helper/my-help/", { params });
+  if (Array.isArray(data)) return { count: data.length, next: null, previous: null, results: data };
+  return {
+    count: data.count || 0,
+    next: data.next || null,
+    previous: data.previous || null,
+    results: data.results || [],
+  };
+}
+
 export async function takeRequest(requestId, payload = {}) {
   const { data } = await api.post(`/requests/helper/take/${requestId}/`, {
     method: payload.method || "certificate",

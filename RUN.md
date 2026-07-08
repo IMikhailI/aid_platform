@@ -90,12 +90,17 @@ Fulfillment использует только внутренний `mock_certifi
 
 Endpoints:
 
+- `GET /api/helper/my-help/`
 - `GET/POST /api/helper/requests/{id}/fulfillment/`
 - `POST /api/helper/requests/{id}/fulfillment/deliver/`
 - `GET /api/applicant/requests/{id}/fulfillment/`
 - `POST /api/applicant/requests/{id}/confirm-receipt/`
 - `GET /api/moderation/requests/{id}/fulfillment/`
 - `PATCH /api/requests/close/{id}/` — deprecated applicant confirmation alias
+
+`GET /api/helper/my-help/` возвращает только commitments текущего helper и
+безопасную сводку fulfillment. Applicant identity, fraud/verification,
+telemetry и полный код сертификата в этот ответ не входят.
 
 ---
 

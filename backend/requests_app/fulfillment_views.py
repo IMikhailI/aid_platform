@@ -1,5 +1,6 @@
 from django.shortcuts import get_object_or_404
-from rest_framework import permissions, status
+from rest_framework import generics, permissions, status
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from drf_spectacular.utils import OpenApiResponse, PolymorphicProxySerializer, extend_schema
@@ -8,9 +9,10 @@ from requests_app.fulfillment_serializers import (
     ApplicantDeliveredFulfillmentSerializer, ApplicantPreparedFulfillmentSerializer,
     FulfillmentCreateSerializer,
     FulfillmentErrorSerializer, HelperFulfillmentSerializer,
-    ModeratorFulfillmentSerializer, ReceiptConfirmationSerializer,
+    HelperOwnedRequestSerializer, ModeratorFulfillmentSerializer,
+    ReceiptConfirmationSerializer,
 )
-from requests_app.models import AidFulfillment
+from requests_app.models import AidFulfillment, HelpCommitment
 from requests_app.permissions import IsApplicant, IsHelperOnly, IsModerator
 from requests_app.services.fulfillment import (
     FulfillmentNotFound, FulfillmentStateConflict, FulfillmentValidationError,
@@ -26,6 +28,47 @@ def fulfillment_error_response(exc):
     else:
         response_status = status.HTTP_400_BAD_REQUEST
     return Response({"code": exc.code, "detail": exc.detail}, status=response_status)
+
+
+class HelperOwnedRequestsPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = "page_size"
+    max_page_size = 100
+
+
+class HelperOwnedRequestsView(generics.ListAPIView):
+    queryset = HelpCommitment.objects.none()
+    serializer_class = HelperOwnedRequestSerializer
+    permission_classes = [permissions.IsAuthenticated, IsHelperOnly]
+    pagination_class = HelperOwnedRequestsPagination
+    filter_backends = []
+
+    @extend_schema(
+        operation_id="helper_owned_requests_list",
+        tags=["helper-requests"],
+        summary="Получить заявки, взятые текущим helper",
+        description=(
+            "Privacy-safe список собственных HelpCommitment с безопасной "
+            "сводкой fulfillment. Applicant identity, fraud, verification, "
+            "telemetry и полный certificate_code не возвращаются."
+        ),
+        responses={
+            200: HelperOwnedRequestSerializer(many=True),
+            403: OpenApiResponse(description="Недостаточно прав"),
+        },
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
+    def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return HelpCommitment.objects.none()
+        return (
+            HelpCommitment.objects
+            .filter(helper=self.request.user)
+            .select_related("aid_request", "fulfillment")
+            .order_by("-created_at", "-id")
+        )
 
 
 class HelperFulfillmentView(APIView):

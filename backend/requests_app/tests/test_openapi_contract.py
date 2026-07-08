@@ -15,6 +15,7 @@ KEY_PATHS = {
     "/api/fraud/requests/{request_id}/recheck/",
     "/api/helper/requests/{request_id}/fulfillment/",
     "/api/helper/requests/{request_id}/fulfillment/deliver/",
+    "/api/helper/my-help/",
     "/api/applicant/requests/{request_id}/fulfillment/",
     "/api/applicant/requests/{request_id}/confirm-receipt/",
     "/api/moderation/requests/{request_id}/fulfillment/",
@@ -73,10 +74,18 @@ class OpenApiContractTests(TestCase):
         schemas = self.schema["components"]["schemas"]
         helper_fulfillment = schemas["HelperFulfillment"]["properties"]
         helper_request = schemas["HelperAidRequest"]["properties"]
+        helper_owned_request = schemas["HelperOwnedRequest"]["properties"]
         self.assertNotIn("certificate_code", helper_fulfillment)
         self.assertIn("masked_certificate_code", helper_fulfillment)
         for forbidden in ("applicant", "applicant_id", "applicant_username", "email"):
             self.assertNotIn(forbidden, helper_request)
+        self.assertIn("masked_certificate_code", helper_owned_request)
+        for forbidden in (
+            "applicant", "applicant_id", "applicant_username", "email",
+            "risk_score", "verification_status", "certificate_code",
+            "device_id_hash", "ip_hash", "user_agent_hash",
+        ):
+            self.assertNotIn(forbidden, helper_owned_request)
 
     def test_applicant_schemas_do_not_expose_fraud_or_helper_identity(self):
         schemas = self.schema["components"]["schemas"]

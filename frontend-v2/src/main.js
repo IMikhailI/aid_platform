@@ -8,6 +8,7 @@ import "./assets/styles/auth.css";
 import "./assets/styles/helper.css";
 import "./assets/styles/helper-requests.css";
 import "./assets/styles/applicant.css";
+import "./assets/styles/moderator.css";
 
 createApp(App).use(router).mount("#app");
 

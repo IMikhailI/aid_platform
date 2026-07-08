@@ -39,3 +39,11 @@ npm run dev
 Интерфейс использует `GET/PATCH /api/applicant/profile/`, `POST /api/applicant/verification/submit/`, `GET /api/applicant/verification/history/`, `GET /api/requests/applicant/my/`, `POST /api/requests/applicant/create/`, `GET /api/applicant/requests/{id}/fulfillment/` и `POST /api/applicant/requests/{id}/confirm-receipt/`.
 
 Создание заявки отправляет её на модерацию, а подтверждение получения закрывает заявку. Верификация реализована в демонстрационном формате без документов и интеграции с Госуслугами. Личность помощника, внутренние поля модерации и код сертификата до передачи помощи не отображаются.
+
+## Панель модерации
+
+Маршруты `/moderator/pending`, `/moderator/approved` и `/moderator/rejected` доступны ролям `moderator` и `admin`. Корневой `/moderator` перенаправляет в очередь pending.
+
+Очередь использует `GET /api/requests/moderation/queue/` и `POST /api/requests/moderation/{id}/`. Fraud-контекст загружается через decision/checks endpoints; доступны recheck и ручной override с обязательной причиной. Approve может вернуть `409`, если публикация запрещена fraud policy или fraud decision отсутствует.
+
+Компактный блок верификаций использует `/api/moderation/verifications/` и decision endpoint. Текущий backend не предоставляет список уже одобренных и отклонённых заявок, поэтому соответствующие вкладки показывают нейтральное состояние без демонстрационных данных; полноценный архив требует отдельного read-only backend endpoint.

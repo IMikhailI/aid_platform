@@ -30,7 +30,17 @@ const routes = [
       { path: "settings", component: () => import("../pages/helper/HelperSettingsPage.vue") },
     ],
   },
-  { path: "/moderator", component: () => import("../pages/moderator/ModeratorDashboard.vue"), meta: { auth: true, roles: ["moderator", "admin"] } },
+  {
+    path: "/moderator",
+    component: () => import("../layouts/ModeratorLayout.vue"),
+    meta: { auth: true, roles: ["moderator", "admin"] },
+    children: [
+      { path: "", redirect: "/moderator/pending" },
+      { path: "pending", component: () => import("../pages/moderator/ModeratorPendingPage.vue") },
+      { path: "approved", component: () => import("../pages/moderator/ModeratorApprovedPage.vue") },
+      { path: "rejected", component: () => import("../pages/moderator/ModeratorRejectedPage.vue") },
+    ],
+  },
   { path: "/404", component: () => import("../pages/NotFoundPage.vue") },
   { path: "/:pathMatch(.*)*", redirect: "/404" },
 ];

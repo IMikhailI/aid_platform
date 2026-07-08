@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { useRoute } from "vue-router";
 import AuthLayout from "../../layouts/AuthLayout.vue";
 import { getApiError } from "../../services/errors";
 import { authStore } from "../../stores/authStore";
@@ -10,7 +10,6 @@ const password = ref("");
 const remember = ref(false);
 const errorMessage = ref("");
 const route = useRoute();
-const router = useRouter();
 const registrationComplete = computed(() => route.query.registered === "1");
 
 async function submit() {
@@ -20,7 +19,8 @@ async function submit() {
     const user = await authStore.login(username.value, password.value);
     const rolePath = authStore.redirectByRole(user.role);
     const requestedPath = typeof route.query.redirect === "string" ? route.query.redirect : "";
-    await router.push(requestedPath === rolePath ? requestedPath : rolePath);
+    const isAllowedRedirect = requestedPath === rolePath || requestedPath.startsWith(`${rolePath}/`);
+    window.location.assign(isAllowedRedirect ? requestedPath : rolePath);
   } catch (error) {
     errorMessage.value = error.response?.status === 401
       ? "Неверное имя пользователя или пароль."

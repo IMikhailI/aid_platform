@@ -72,6 +72,7 @@ watch(() => props.request?.id, (id) => { if (id) loadDetails(id); }, { immediate
           <ul v-if="reasons.length" class="moderator-reasons"><li v-for="reason in reasons" :key="reason">{{ reason }}</li></ul>
           <div v-if="checks.length" class="moderator-checks"><div v-for="check in checks" :key="check.id"><span>{{ check.signal_code }}</span><strong>{{ check.weight > 0 ? "+" : "" }}{{ check.weight }}</strong></div></div>
           <p v-else-if="decision" class="moderator-muted">Дополнительные сигналы отсутствуют.</p>
+          <p v-if="decision?.action === 'block'" class="moderator-message moderator-message--warning">Публикация запрещена антифрод-политикой. Выполните override или отклоните заявку.</p>
           <button v-if="decision && ['block', 'manual_review'].includes(decision.action)" class="moderator-override-button" type="button" @click="emit('override', request)">Изменить fraud-действие</button>
         </template>
         <p v-if="error" class="moderator-message moderator-message--warning">{{ error }}</p>

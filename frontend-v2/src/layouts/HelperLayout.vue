@@ -20,9 +20,9 @@ function isActive(item) {
   return route.path.endsWith(`/${item.key}`);
 }
 
-function signOut() {
+async function signOut() {
   authStore.logout();
-  router.push("/");
+  await router.replace("/");
 }
 
 onMounted(() => document.body.classList.add("helper-dashboard-open"));

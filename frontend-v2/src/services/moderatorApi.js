@@ -67,7 +67,7 @@ export function getModeratorApiError(error, fallback = "Не удалось вы
   const data = error?.response?.data;
   const code = data?.code;
   if (code === "fraud_publication_blocked") {
-    return "Публикация запрещена антифрод-политикой. Требуется override или отклонение.";
+    return "Публикация запрещена антифрод-политикой. Выполните override или отклоните заявку.";
   }
   if (code === "fraud_decision_missing") {
     return "Антифрод-решение отсутствует. Выполните повторную проверку или отклоните заявку.";

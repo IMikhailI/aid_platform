@@ -1,3 +1,15 @@
+<script setup>
+import { useRouter } from "vue-router";
+
+const router = useRouter();
+
+async function openLogin() {
+  if (router.currentRoute.value.path !== "/login") {
+    await router.push("/login");
+  }
+}
+</script>
+
 <template>
   <header class="header" role="banner">
     <div class="container header__inner">
@@ -12,9 +24,9 @@
         <span class="header__link">О платформе</span>
       </nav>
 
-      <RouterLink class="header__button" to="/login" aria-label="Войти в личный кабинет">
+      <button class="header__button" type="button" aria-label="Войти в личный кабинет" @click="openLogin">
         Войти
-      </RouterLink>
+      </button>
     </div>
   </header>
 </template>

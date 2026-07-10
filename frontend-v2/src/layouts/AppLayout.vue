@@ -5,9 +5,9 @@ import { authStore } from "../stores/authStore";
 defineProps({ title: { type: String, required: true } });
 const router = useRouter();
 
-function signOut() {
+async function signOut() {
   authStore.logout();
-  router.push("/");
+  await router.replace("/");
 }
 </script>
 

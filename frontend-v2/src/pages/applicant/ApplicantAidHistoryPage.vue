@@ -16,11 +16,14 @@ const completed = computed(() => requests.value.filter((item) => item.status ===
 const total = computed(() => completed.value.reduce((sum, item) => sum + Number(item.requested_amount || 0), 0));
 const inProgressCount = computed(() => requests.value.filter((item) => item.status === "in_progress").length);
 
-async function loadFulfillment(request) {
+async function loadFulfillment(request, { silent = false } = {}) {
   busy[request.id] = true;
-  fulfillmentError[request.id] = "";
+  if (!silent) fulfillmentError[request.id] = "";
   try { fulfillment[request.id] = await getApplicantFulfillment(request.id); }
-  catch (requestError) { fulfillmentError[request.id] = getApplicantApiError(requestError, "Информация о помощи пока недоступна"); }
+  catch (requestError) {
+    fulfillment[request.id] = null;
+    if (!silent) fulfillmentError[request.id] = getApplicantApiError(requestError, "Информация о помощи пока недоступна");
+  }
   finally { busy[request.id] = false; }
 }
 
@@ -40,7 +43,14 @@ async function confirm(request) {
 }
 
 onMounted(async () => {
-  try { requests.value = await getApplicantRequests(); }
+  try {
+    requests.value = await getApplicantRequests();
+    await Promise.allSettled(
+      requests.value
+        .filter((item) => item.status === "in_progress")
+        .map((item) => loadFulfillment(item, { silent: true })),
+    );
+  }
   catch (requestError) { error.value = getApplicantApiError(requestError, "Не удалось загрузить историю"); }
   finally { loading.value = false; }
 });

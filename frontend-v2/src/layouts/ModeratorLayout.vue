@@ -7,9 +7,9 @@ const router = useRouter();
 const user = authStore.currentUser;
 const roleLabel = computed(() => user.value?.role === "admin" ? "Администратор" : "Модератор");
 
-function logout() {
+async function logout() {
   authStore.logout();
-  router.push("/");
+  await router.replace("/");
 }
 
 onMounted(() => document.body.classList.add("moderator-dashboard-open"));

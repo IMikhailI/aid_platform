@@ -18,8 +18,13 @@ const pageSize = 10;
 const form = reactive({ provider_name: "", amount: "" });
 
 const totalPages = computed(() => Math.max(1, Math.ceil(feed.value.count / pageSize)));
-const waitingCount = computed(() => feed.value.results.filter((item) => ["none", "created"].includes(item.fulfillment_status)).length);
-const completedCount = computed(() => feed.value.results.filter((item) => item.fulfillment_status === "confirmed").length);
+const waitingCount = computed(() => feed.value.results.filter((item) => (
+  item.request_status === "in_progress"
+  && ["none", "created", "delivered"].includes(item.fulfillment_status)
+)).length);
+const completedCount = computed(() => feed.value.results.filter((item) => (
+  item.request_status === "closed" || item.fulfillment_status === "confirmed"
+)).length);
 
 const requestStatuses = {
   in_progress: "В работе",
@@ -106,8 +111,8 @@ onMounted(load);
 
     <div class="helper-summary-cards">
       <article><span>Всего взято заявок</span><strong>{{ loading ? "—" : feed.count }}</strong></article>
-      <article><span>Требуют действия на странице</span><strong>{{ loading ? "—" : waitingCount }}</strong></article>
-      <article><span>Подтверждено на странице</span><strong>{{ loading ? "—" : completedCount }}</strong></article>
+      <article><span>В процессе</span><strong>{{ loading ? "—" : waitingCount }}</strong></article>
+      <article><span>Оказано помощи</span><strong>{{ loading ? "—" : completedCount }}</strong></article>
     </div>
 
     <p v-if="notice" class="helper-message helper-message--success">{{ notice }}</p>

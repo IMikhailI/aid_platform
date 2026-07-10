@@ -8,11 +8,16 @@ import {
   setTokens,
 } from "../services/auth";
 
-const state = reactive({ user: getStoredUser(), loading: false, initialized: false });
+const state = reactive({
+  user: getStoredUser(),
+  accessToken: getAccessToken(),
+  loading: false,
+  initialized: false,
+});
 
 export const currentUser = computed(() => state.user);
 export const currentRole = computed(() => state.user?.role || "");
-export const isAuthenticated = computed(() => Boolean(getAccessToken()));
+export const isAuthenticated = computed(() => Boolean(state.accessToken));
 
 export function redirectByRole(role = currentRole.value) {
   if (role === "applicant") return "/applicant";
@@ -25,6 +30,7 @@ export async function fetchMe() {
   try {
     const { data } = await api.get("/auth/me/");
     state.user = data;
+    state.accessToken = getAccessToken();
     setStoredUser(data);
     return data;
   } finally {
@@ -37,6 +43,7 @@ export async function login(username, password) {
   try {
     const { data } = await api.post("/auth/token/", { username, password });
     setTokens(data);
+    state.accessToken = data.access || getAccessToken();
     return await fetchMe();
   } catch (error) {
     logout();
@@ -59,6 +66,7 @@ export async function register(payload) {
 export function logout() {
   clearAuth();
   state.user = null;
+  state.accessToken = "";
   state.initialized = true;
 }
 

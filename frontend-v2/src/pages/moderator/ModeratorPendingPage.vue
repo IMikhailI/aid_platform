@@ -87,9 +87,9 @@ onMounted(() => { loadQueue(); loadVerifications(); });
   <section class="moderator-page">
     <div class="moderator-kpis">
       <article><span><img src="/icons/clock.svg" alt="" /></span><div><strong>{{ loading ? "—" : feed.count }}</strong><b>На модерации</b><small>Требуют проверки</small></div></article>
-      <article><span><img src="/icons/check-circle.svg" alt="" /></span><div><strong>—</strong><b>Одобрено</b><small>История недоступна в API</small></div></article>
-      <article><span><img src="/icons/x-circle.svg" alt="" /></span><div><strong>—</strong><b>Отклонено</b><small>История недоступна в API</small></div></article>
-      <article><span><img src="/icons/trending-up.svg" alt="" /></span><div><strong>—</strong><b>Процент одобрения</b><small>Нет серверной статистики</small></div></article>
+      <article><span><img src="/icons/check-circle.svg" alt="" /></span><div><strong>—</strong><b>Одобрено</b><small>Будущий read-only архив</small></div></article>
+      <article><span><img src="/icons/x-circle.svg" alt="" /></span><div><strong>—</strong><b>Отклонено</b><small>Будущий read-only архив</small></div></article>
+      <article><span><img src="/icons/trending-up.svg" alt="" /></span><div><strong>—</strong><b>Процент одобрения</b><small>После endpoint истории</small></div></article>
     </div>
 
     <section class="moderator-queue-toolbar">

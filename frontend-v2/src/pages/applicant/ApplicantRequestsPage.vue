@@ -1,7 +1,12 @@
 <script setup>
-import { onMounted, ref } from "vue";
+import { onMounted, reactive, ref } from "vue";
 import { authStore } from "../../stores/authStore";
-import { getApplicantApiError, getApplicantRequests } from "../../services/applicantApi";
+import {
+  confirmApplicantReceipt,
+  getApplicantApiError,
+  getApplicantFulfillment,
+  getApplicantRequests,
+} from "../../services/applicantApi";
 import ApplicantCreateRequestModal from "../../components/applicant/ApplicantCreateRequestModal.vue";
 import ApplicantRequestRow from "../../components/applicant/ApplicantRequestRow.vue";
 
@@ -10,11 +15,31 @@ const loading = ref(true);
 const error = ref("");
 const notice = ref("");
 const showCreate = ref(false);
+const fulfillment = reactive({});
+const fulfillmentError = reactive({});
+const busy = reactive({});
+
+async function loadFulfillment(request, { silent = false } = {}) {
+  if (request.status !== "in_progress") return;
+  busy[request.id] = true;
+  if (!silent) fulfillmentError[request.id] = "";
+  try {
+    fulfillment[request.id] = await getApplicantFulfillment(request.id);
+  } catch (requestError) {
+    fulfillment[request.id] = null;
+    if (!silent) fulfillmentError[request.id] = getApplicantApiError(requestError, "Информация о помощи пока недоступна");
+  } finally {
+    busy[request.id] = false;
+  }
+}
 
 async function loadRequests() {
   loading.value = true;
   error.value = "";
-  try { requests.value = await getApplicantRequests(); }
+  try {
+    requests.value = await getApplicantRequests();
+    await Promise.allSettled(requests.value.filter((item) => item.status === "in_progress").map((item) => loadFulfillment(item, { silent: true })));
+  }
   catch (requestError) { error.value = getApplicantApiError(requestError, "Не удалось загрузить заявки"); }
   finally { loading.value = false; }
 }
@@ -23,6 +48,21 @@ async function created() {
   showCreate.value = false;
   notice.value = "Заявка создана и отправлена на модерацию";
   await loadRequests();
+}
+
+async function confirm(request) {
+  busy[request.id] = true;
+  fulfillmentError[request.id] = "";
+  notice.value = "";
+  try {
+    await confirmApplicantReceipt(request.id);
+    await loadRequests();
+    notice.value = "Получение помощи подтверждено, заявка закрыта";
+  } catch (requestError) {
+    fulfillmentError[request.id] = getApplicantApiError(requestError, "Не удалось подтвердить получение");
+  } finally {
+    busy[request.id] = false;
+  }
 }
 
 onMounted(loadRequests);
@@ -43,7 +83,14 @@ onMounted(loadRequests);
         <span><img src="/icons/file-text.svg" alt="" /></span><h2>У вас пока нет заявок</h2><p>Создайте первую заявку, чтобы запросить необходимую помощь.</p>
         <button class="applicant-button" type="button" @click="showCreate = true">Создать заявку</button>
       </div>
-      <ApplicantRequestRow v-for="request in requests" v-else :key="request.id" :request="request" />
+      <ApplicantRequestRow v-for="request in requests" v-else :key="request.id" :request="request">
+        <p v-if="fulfillmentError[request.id]" class="applicant-inline-error">{{ fulfillmentError[request.id] }}</p>
+        <div v-if="fulfillment[request.id]?.status === 'delivered'" class="applicant-request-row__actions">
+          <button class="applicant-button" type="button" :disabled="busy[request.id]" @click="confirm(request)">
+            {{ busy[request.id] ? "Подтверждаем…" : "Подтвердить получение" }}
+          </button>
+        </div>
+      </ApplicantRequestRow>
     </div>
     <ApplicantCreateRequestModal v-if="showCreate" :region="authStore.currentUser.value?.region || ''" @close="showCreate = false" @created="created" />
   </section>

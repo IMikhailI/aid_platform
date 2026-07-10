@@ -14,5 +14,5 @@ import "./assets/styles/moderator.css";
 createApp(App).use(router).mount("#app");
 
 window.addEventListener("auth:logout", () => {
-  if (router.currentRoute.value.meta.auth) router.replace("/login");
+  if (router.currentRoute.value.meta.auth) router.replace("/");
 });

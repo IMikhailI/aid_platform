@@ -12,6 +12,8 @@ env/
 **/__pycache__/
 *.py[cod]
 *.sqlite3
+*.sqlite
+*.db
 .pytest_cache/
 .coverage
 coverage.xml
@@ -27,9 +29,16 @@ junit.xml
 backend/staticfiles/
 frontend/node_modules/
 frontend/dist/
+frontend-v2/node_modules/
+frontend-v2/dist/
+frontend-v2/.env.local
 node_modules/
 dist/
 build/
+
+# Local smoke scratch files
+smoke-*.tmp
+*.smoke.tmp
 
 # JavaScript package-manager logs
 npm-debug.log*

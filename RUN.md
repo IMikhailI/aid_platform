@@ -33,10 +33,11 @@ source .venv/bin/activate
 python -m pip install -r backend/requirements.txt
 ```
 
-Frontend dependencies устанавливаются воспроизводимо из lockfile:
+Актуальный frontend находится в `frontend-v2`. Dependencies устанавливаются
+воспроизводимо из lockfile:
 
 ```bash
-cd frontend
+cd frontend-v2
 npm ci
 cd ..
 ```
@@ -62,7 +63,10 @@ cd ~/aid_platform
 - Backend: http://localhost:8000
 - Health-check: http://localhost:8000/api/health/
 - Admin: http://localhost:8000/admin/
-- Frontend: http://localhost:5173
+- Frontend-v2: http://localhost:5173
+
+`docker-compose.yml` запускает именно `frontend-v2`; старая папка `frontend`
+удалена как legacy-прототип после фиксации MVP.
 
 ### Демонстрационная верификация заявителя
 

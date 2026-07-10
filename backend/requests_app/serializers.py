@@ -5,6 +5,7 @@ from drf_spectacular.utils import extend_schema_field
 
 from .models import AidRequest, RequestStatusHistory, HelpCommitment, RequestStatus
 from .services.transitions import transition_request
+from fraud.models import FraudAction, FraudRiskLevel
 
 
 class AidRequestCreateSerializer(serializers.ModelSerializer):
@@ -61,6 +62,9 @@ class HelperAidRequestSerializer(serializers.ModelSerializer):
 class ModeratorAidRequestSerializer(serializers.ModelSerializer):
     applicant_username = serializers.CharField(source="applicant.username", read_only=True)
     applicant_verification_status = serializers.SerializerMethodField()
+    risk_level = serializers.SerializerMethodField()
+    fraud_action = serializers.SerializerMethodField()
+    latest_moderation_comment = serializers.SerializerMethodField()
 
     @extend_schema_field(
         serializers.ChoiceField(
@@ -75,12 +79,45 @@ class ModeratorAidRequestSerializer(serializers.ModelSerializer):
         latest = profile.verification_requests.first()
         return latest.status if latest else "not_submitted"
 
+    @extend_schema_field(serializers.ChoiceField(choices=FraudRiskLevel.choices, allow_null=True))
+    def get_risk_level(self, obj):
+        try:
+            return obj.fraud_decision.risk_level
+        except ObjectDoesNotExist:
+            return None
+
+    @extend_schema_field(serializers.ChoiceField(choices=FraudAction.choices, allow_null=True))
+    def get_fraud_action(self, obj):
+        try:
+            return obj.fraud_decision.action
+        except ObjectDoesNotExist:
+            return None
+
+    @extend_schema_field(serializers.CharField(allow_blank=True))
+    def get_latest_moderation_comment(self, obj):
+        histories = getattr(obj, "_prefetched_objects_cache", {}).get("status_history")
+        if histories is not None:
+            for item in histories:
+                if item.new_status in {RequestStatus.PUBLISHED, RequestStatus.REJECTED} and item.comment:
+                    return item.comment
+            return ""
+
+        latest = (
+            obj.status_history
+            .filter(new_status__in=[RequestStatus.PUBLISHED, RequestStatus.REJECTED])
+            .exclude(comment="")
+            .order_by("-created_at")
+            .first()
+        )
+        return latest.comment if latest else ""
+
     class Meta:
         model = AidRequest
         fields = (
             "id", "title", "category", "region", "requested_amount", "urgency",
-            "status", "risk_score", "is_flagged", "applicant_username",
-            "applicant_verification_status", "created_at"
+            "status", "risk_score", "risk_level", "fraud_action", "is_flagged",
+            "applicant_username", "applicant_verification_status",
+            "latest_moderation_comment", "created_at", "updated_at",
         )
         read_only_fields = fields
 

@@ -10,6 +10,7 @@ from drf_spectacular.generators import SchemaGenerator
 KEY_PATHS = {
     "/api/applicant/profile/",
     "/api/applicant/verification/submit/",
+    "/api/moderation/requests/",
     "/api/moderation/verifications/",
     "/api/fraud/requests/{request_id}/decision/",
     "/api/fraud/requests/{request_id}/recheck/",
@@ -106,6 +107,14 @@ class OpenApiContractTests(TestCase):
         self.assertIn(
             "applicant_verification_status",
             schemas["ModeratorAidRequest"]["properties"],
+        )
+        self.assertTrue(
+            {
+                "risk_level",
+                "fraud_action",
+                "latest_moderation_comment",
+                "updated_at",
+            }.issubset(schemas["ModeratorAidRequest"]["properties"])
         )
         fraud = schemas["FraudDecision"]["properties"]
         self.assertTrue({"score", "risk_level", "base_action", "action", "reasons"}.issubset(fraud))

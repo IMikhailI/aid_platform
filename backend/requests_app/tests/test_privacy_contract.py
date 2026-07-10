@@ -259,7 +259,10 @@ class PrivacyApiContractTests(APITestCase):
     def test_helper_cannot_access_moderation_queue(self):
         self._auth(self.helper)
         response = self.client.get("/api/requests/moderation/queue/")
+        history_response = self.client.get("/api/moderation/requests/")
+
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(history_response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_applicant_and_helper_cannot_cross_role_list_endpoints(self):
         self._auth(self.helper)
@@ -267,9 +270,11 @@ class PrivacyApiContractTests(APITestCase):
 
         self._auth(self.applicant)
         helper_list_response = self.client.get("/api/requests/published/")
+        moderation_history_response = self.client.get("/api/moderation/requests/")
 
         self.assertEqual(applicant_list_response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(helper_list_response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(moderation_history_response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_applicant_and_helper_cannot_access_any_fraud_endpoint(self):
         endpoints = [
@@ -327,6 +332,8 @@ class PrivacyApiContractTests(APITestCase):
         self.client.force_authenticate(user=None)
         published_response = self.client.get("/api/requests/published/")
         history_response = self.client.get(f"/api/requests/{self.published_request.id}/history/")
+        moderation_history_response = self.client.get("/api/moderation/requests/")
 
         self.assertEqual(published_response.status_code, status.HTTP_401_UNAUTHORIZED)
         self.assertEqual(history_response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(moderation_history_response.status_code, status.HTTP_401_UNAUTHORIZED)

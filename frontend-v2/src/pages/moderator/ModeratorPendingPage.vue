@@ -6,6 +6,7 @@ import ModeratorRequestCard from "../../components/moderator/ModeratorRequestCar
 import ModeratorRequestDetailsModal from "../../components/moderator/ModeratorRequestDetailsModal.vue";
 import ModeratorStatusTabs from "../../components/moderator/ModeratorStatusTabs.vue";
 import ModeratorVerificationPanel from "../../components/moderator/ModeratorVerificationPanel.vue";
+import { useModeratorCounts } from "../../components/moderator/useModeratorCounts";
 import { decideModerationRequest, getModerationQueue, getModeratorApiError, getVerificationQueue, overrideFraud } from "../../services/moderatorApi";
 
 const feed = ref({ count: 0, next: null, previous: null, results: [] });
@@ -29,6 +30,7 @@ const pageSize = 10;
 const flaggedCount = computed(() => feed.value.results.filter((item) => item.is_flagged).length);
 const safePercent = computed(() => feed.value.results.length ? Math.round((feed.value.results.length - flaggedCount.value) / feed.value.results.length * 100) : 100);
 const totalPages = computed(() => Math.max(1, Math.ceil(feed.value.count / pageSize)));
+const { approvalPercent, counts, countsLoading, loadCounts } = useModeratorCounts();
 
 async function loadQueue() {
   loading.value = true; error.value = "";
@@ -51,7 +53,7 @@ async function approve(request) {
     await decideModerationRequest(request.id, "approve");
     notice.value = `Заявка #${request.id} одобрена и опубликована`;
     selected.value = null;
-    await loadQueue();
+    await Promise.all([loadQueue(), loadCounts()]);
   } catch (requestError) { error.value = getModeratorApiError(requestError, "Не удалось одобрить заявку"); }
   finally { actionLoading.value = false; }
 }
@@ -69,7 +71,7 @@ async function confirmDecision(payload) {
     } else {
       await decideModerationRequest(decisionTarget.value.id, "reject", payload.comment);
       notice.value = `Заявка #${decisionTarget.value.id} отклонена`;
-      await loadQueue();
+      await Promise.all([loadQueue(), loadCounts()]);
     }
     decisionTarget.value = null;
   } catch (requestError) { modalError.value = getModeratorApiError(requestError); }
@@ -80,20 +82,20 @@ async function applyFilters() { currentPage.value = 1; await loadQueue(); }
 async function changePage(page) { currentPage.value = page; await loadQueue(); window.scrollTo({ top: 0, behavior: "smooth" }); }
 function verificationDecided(id) { verifications.value = verifications.value.filter((item) => item.id !== id); notice.value = "Решение по верификации сохранено"; }
 
-onMounted(() => { loadQueue(); loadVerifications(); });
+onMounted(() => { loadQueue(); loadCounts(); loadVerifications(); });
 </script>
 
 <template>
   <section class="moderator-page">
     <div class="moderator-kpis">
       <article><span><img src="/icons/clock.svg" alt="" /></span><div><strong>{{ loading ? "—" : feed.count }}</strong><b>На модерации</b><small>Требуют проверки</small></div></article>
-      <article><span><img src="/icons/check-circle.svg" alt="" /></span><div><strong>—</strong><b>Одобрено</b><small>Будущий read-only архив</small></div></article>
-      <article><span><img src="/icons/x-circle.svg" alt="" /></span><div><strong>—</strong><b>Отклонено</b><small>Будущий read-only архив</small></div></article>
-      <article><span><img src="/icons/trending-up.svg" alt="" /></span><div><strong>—</strong><b>Процент одобрения</b><small>После endpoint истории</small></div></article>
+      <article><span><img src="/icons/check-circle.svg" alt="" /></span><div><strong>{{ countsLoading ? "—" : counts.approved }}</strong><b>Одобрено</b><small>Опубликованы, в работе или закрыты</small></div></article>
+      <article><span><img src="/icons/x-circle.svg" alt="" /></span><div><strong>{{ countsLoading ? "—" : counts.rejected }}</strong><b>Отклонено</b><small>Архив отрицательных решений</small></div></article>
+      <article><span><img src="/icons/trending-up.svg" alt="" /></span><div><strong>{{ countsLoading ? "—" : approvalPercent }}</strong><b>Процент одобрения</b><small>По принятым решениям</small></div></article>
     </div>
 
     <section class="moderator-queue-toolbar">
-      <ModeratorStatusTabs :pending="feed.count" />
+      <ModeratorStatusTabs :pending="countsLoading ? '—' : counts.pending" :approved="countsLoading ? '—' : counts.approved" :rejected="countsLoading ? '—' : counts.rejected" />
       <form @submit.prevent="applyFilters"><label><img src="/icons/search.svg" alt="" /><input v-model.trim="search" type="search" placeholder="Поиск по названию, описанию или региону…" /></label><select v-model="category" aria-label="Категория"><option value="">Все категории</option><option value="food">Еда</option><option value="children">Детские товары</option><option value="medicine">Лекарства</option><option value="clothes">Одежда</option><option value="other">Другое</option></select><select v-model="flagged" aria-label="Риск"><option value="">Любой риск</option><option value="true">Только с флагом</option><option value="false">Без флага</option></select><select v-model="ordering" aria-label="Сортировка"><option value="-created_at">Сначала новые</option><option value="-risk_score">Сначала рискованные</option><option value="risk_score">Сначала безопасные</option></select><button type="submit"><img src="/icons/filter.svg" alt="" /> Фильтры</button></form>
     </section>
 

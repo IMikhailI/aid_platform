@@ -47,7 +47,7 @@ onMounted(async () => {
     requests.value = await getApplicantRequests();
     await Promise.allSettled(
       requests.value
-        .filter((item) => item.status === "in_progress")
+        .filter((item) => item.status === "closed")
         .map((item) => loadFulfillment(item, { silent: true })),
     );
   }

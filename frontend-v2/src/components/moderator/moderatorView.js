@@ -27,6 +27,14 @@ export const fraudActions = {
   block: "Блокировать",
 };
 
+export const statusLabels = {
+  on_moderation: "На модерации",
+  published: "Опубликована",
+  in_progress: "В работе",
+  closed: "Закрыта",
+  rejected: "Отклонена",
+};
+
 export function formatMoney(value) {
   if (value === null || value === undefined || value === "") return "Не указана";
   return `${new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 2 }).format(Number(value))} ₽`;

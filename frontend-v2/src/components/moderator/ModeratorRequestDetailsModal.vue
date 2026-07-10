@@ -4,7 +4,11 @@ import { getFraudChecks, getFraudDecision, getModeratorApiError, getRequestHisto
 import ModeratorRiskBadge from "./ModeratorRiskBadge.vue";
 import { categories, formatDate, formatMoney, fraudActions, riskLevel, verificationLabels } from "./moderatorView";
 
-const props = defineProps({ request: { type: Object, default: null }, actionLoading: Boolean });
+const props = defineProps({
+  request: { type: Object, default: null },
+  actionLoading: Boolean,
+  actions: { type: Boolean, default: true },
+});
 const emit = defineEmits(["close", "approve", "reject", "override"]);
 const loading = ref(false);
 const rechecking = ref(false);
@@ -25,7 +29,11 @@ async function loadDetails(id) {
   if (fraudResult.status === "fulfilled") decision.value = fraudResult.value;
   if (checksResult.status === "fulfilled") checks.value = checksResult.value.results;
   if (historyResult.status === "fulfilled") history.value = historyResult.value;
-  if (fraudResult.status === "rejected") error.value = "Антифрод-решение пока недоступно. Можно выполнить повторную проверку.";
+  if (fraudResult.status === "rejected") {
+    error.value = props.actions
+      ? "Антифрод-решение пока недоступно. Можно выполнить повторную проверку."
+      : "Антифрод-решение пока недоступно.";
+  }
   loading.value = false;
 }
 
@@ -59,7 +67,7 @@ watch(() => props.request?.id, (id) => { if (id) loadDetails(id); }, { immediate
       <p class="moderator-details__note">Подробное описание не входит в текущий moderator serializer.</p>
 
       <section class="moderator-fraud-panel">
-        <div class="moderator-fraud-panel__heading"><div><h3>Антифрод-проверка</h3><p>Решение и сигналы автоматической проверки</p></div><button class="moderator-secondary-button" type="button" :disabled="rechecking" @click="recheck">{{ rechecking ? "Проверяем…" : "Проверить снова" }}</button></div>
+        <div class="moderator-fraud-panel__heading"><div><h3>Антифрод-проверка</h3><p>Решение и сигналы автоматической проверки</p></div><button v-if="actions" class="moderator-secondary-button" type="button" :disabled="rechecking" @click="recheck">{{ rechecking ? "Проверяем…" : "Проверить снова" }}</button></div>
         <div v-if="loading" class="moderator-inline-loading">Загрузка служебных данных…</div>
         <template v-else>
           <div v-if="decision" class="moderator-fraud-decision">
@@ -73,13 +81,13 @@ watch(() => props.request?.id, (id) => { if (id) loadDetails(id); }, { immediate
           <div v-if="checks.length" class="moderator-checks"><div v-for="check in checks" :key="check.id"><span>{{ check.signal_code }}</span><strong>{{ check.weight > 0 ? "+" : "" }}{{ check.weight }}</strong></div></div>
           <p v-else-if="decision" class="moderator-muted">Дополнительные сигналы отсутствуют.</p>
           <p v-if="decision?.action === 'block'" class="moderator-message moderator-message--warning">Публикация запрещена антифрод-политикой. Выполните override или отклоните заявку.</p>
-          <button v-if="decision && ['block', 'manual_review'].includes(decision.action)" class="moderator-override-button" type="button" @click="emit('override', request)">Изменить fraud-действие</button>
+          <button v-if="actions && decision && ['block', 'manual_review'].includes(decision.action)" class="moderator-override-button" type="button" @click="emit('override', request)">Изменить fraud-действие</button>
         </template>
         <p v-if="error" class="moderator-message moderator-message--warning">{{ error }}</p>
       </section>
 
       <section v-if="history.length" class="moderator-history"><h3>История статусов</h3><div v-for="item in history" :key="item.id"><span>{{ item.from_status }} → {{ item.to_status }}</span><time>{{ formatDate(item.changed_at) }}</time></div></section>
-      <div class="moderator-dialog__actions"><button class="moderator-danger-button" type="button" :disabled="actionLoading" @click="emit('reject', request)">Отклонить</button><button class="moderator-approve-button" type="button" :disabled="actionLoading || decision?.action === 'block'" @click="emit('approve', request)">Одобрить</button></div>
+      <div v-if="actions" class="moderator-dialog__actions"><button class="moderator-danger-button" type="button" :disabled="actionLoading" @click="emit('reject', request)">Отклонить</button><button class="moderator-approve-button" type="button" :disabled="actionLoading || decision?.action === 'block'" @click="emit('approve', request)">Одобрить</button></div>
     </section>
   </div>
 </template>

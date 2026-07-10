@@ -8,6 +8,7 @@ from moderation.views import (
     ModeratorVerificationDetailView,
     ModeratorVerificationQueueView,
 )
+from requests_app.views import ModeratorRequestListView
 
 
 applicant_urlpatterns = [
@@ -25,6 +26,7 @@ applicant_urlpatterns = [
 ]
 
 moderation_urlpatterns = [
+    path("requests/", ModeratorRequestListView.as_view(), name="request-list"),
     path("verifications/", ModeratorVerificationQueueView.as_view(), name="verification-queue"),
     path(
         "verifications/<int:pk>/",

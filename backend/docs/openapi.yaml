@@ -535,6 +535,62 @@ paths:
               schema:
                 $ref: '#/components/schemas/FulfillmentError'
           description: ''
+  /api/moderation/requests/:
+    get:
+      operationId: moderation_request_list
+      description: 'Moderator/admin: история и текущие заявки по разрешённым lifecycle
+        статусам без telemetry/hash/internal полей.'
+      summary: Read-only список заявок для модератора
+      parameters:
+      - in: query
+        name: category
+        schema:
+          type: string
+      - in: query
+        name: is_flagged
+        schema:
+          type: boolean
+      - in: query
+        name: ordering
+        schema:
+          type: string
+      - in: query
+        name: page
+        schema:
+          type: integer
+      - in: query
+        name: page_size
+        schema:
+          type: integer
+      - in: query
+        name: region
+        schema:
+          type: string
+      - in: query
+        name: search
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+        description: Фильтр по status. Можно передать один статус, несколько параметров
+          status или список через запятую.
+      tags:
+      - request-moderation
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedModeratorAidRequestList'
+          description: ''
+        '401':
+          description: Требуется JWT
+        '403':
+          description: Недостаточно прав
   /api/moderation/requests/{request_id}/fulfillment/:
     get:
       operationId: moderation_fulfillment_retrieve
@@ -1815,6 +1871,18 @@ components:
         risk_score:
           type: integer
           readOnly: true
+        risk_level:
+          nullable: true
+          readOnly: true
+          oneOf:
+          - $ref: '#/components/schemas/FraudRiskLevelEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        fraud_action:
+          nullable: true
+          readOnly: true
+          oneOf:
+          - $ref: '#/components/schemas/FraudActionEnum'
+          - $ref: '#/components/schemas/NullEnum'
         is_flagged:
           type: boolean
           readOnly: true
@@ -1825,7 +1893,14 @@ components:
           allOf:
           - $ref: '#/components/schemas/ApplicantVerificationStatusEnum'
           readOnly: true
+        latest_moderation_comment:
+          type: string
+          readOnly: true
         created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
           type: string
           format: date-time
           readOnly: true
@@ -1834,13 +1909,17 @@ components:
       - applicant_verification_status
       - category
       - created_at
+      - fraud_action
       - id
       - is_flagged
+      - latest_moderation_comment
       - region
       - requested_amount
+      - risk_level
       - risk_score
       - status
       - title
+      - updated_at
       - urgency
     ModeratorFulfillment:
       type: object
@@ -2010,6 +2089,9 @@ components:
       - reviewed_by
       - status
       - submitted_at
+    NullEnum:
+      enum:
+      - null
     PaginatedApplicantAidRequestList:
       type: object
       required:

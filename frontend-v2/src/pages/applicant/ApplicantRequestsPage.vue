@@ -38,7 +38,6 @@ async function loadRequests() {
   error.value = "";
   try {
     requests.value = await getApplicantRequests();
-    await Promise.allSettled(requests.value.filter((item) => item.status === "in_progress").map((item) => loadFulfillment(item, { silent: true })));
   }
   catch (requestError) { error.value = getApplicantApiError(requestError, "Не удалось загрузить заявки"); }
   finally { loading.value = false; }
@@ -83,7 +82,7 @@ onMounted(loadRequests);
         <span><img src="/icons/file-text.svg" alt="" /></span><h2>У вас пока нет заявок</h2><p>Создайте первую заявку, чтобы запросить необходимую помощь.</p>
         <button class="applicant-button" type="button" @click="showCreate = true">Создать заявку</button>
       </div>
-      <ApplicantRequestRow v-for="request in requests" v-else :key="request.id" :request="request">
+      <ApplicantRequestRow v-for="request in requests" v-else :key="request.id" :request="request" :action-label="request.status === 'in_progress' && !fulfillment[request.id] ? 'Информация о помощи' : ''" :busy="busy[request.id]" @action="loadFulfillment(request)">
         <p v-if="fulfillmentError[request.id]" class="applicant-inline-error">{{ fulfillmentError[request.id] }}</p>
         <div v-if="fulfillment[request.id]?.status === 'delivered'" class="applicant-request-row__actions">
           <button class="applicant-button" type="button" :disabled="busy[request.id]" @click="confirm(request)">

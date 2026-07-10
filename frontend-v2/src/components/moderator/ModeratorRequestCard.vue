@@ -1,6 +1,6 @@
 <script setup>
 import ModeratorRiskBadge from "./ModeratorRiskBadge.vue";
-import { categories, categoryIcons, formatDate, formatMoney, riskLevel, verificationLabels } from "./moderatorView";
+import { categories, categoryIcons, formatDate, formatMoney, riskLevel, statusLabels, verificationLabels } from "./moderatorView";
 defineProps({ request: { type: Object, required: true }, busy: Boolean, actions: { type: Boolean, default: true } });
 defineEmits(["details", "approve", "reject"]);
 </script>
@@ -16,6 +16,7 @@ defineEmits(["details", "approve", "reject"]);
       <div class="moderator-request-card__facts">
         <div><small>Бюджет</small><strong>{{ formatMoney(request.requested_amount) }}</strong></div>
         <span>Срочность: {{ request.urgency }}/5</span>
+        <span v-if="!actions" class="moderator-status-mark">{{ statusLabels[request.status] || request.status }}</span>
         <span :class="`moderator-verification moderator-verification--${request.applicant_verification_status}`">Профиль: {{ verificationLabels[request.applicant_verification_status] || request.applicant_verification_status }}</span>
         <span v-if="request.is_flagged" class="moderator-flag">⚑ Требует внимания</span>
       </div>

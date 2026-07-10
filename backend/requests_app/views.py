@@ -37,7 +37,13 @@ from requests_app.services.fulfillment import (
     FulfillmentStateConflict,
     confirm_certificate_received,
 )
-from drf_spectacular.utils import extend_schema, OpenApiResponse, PolymorphicProxySerializer
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import (
+    extend_schema,
+    OpenApiParameter,
+    OpenApiResponse,
+    PolymorphicProxySerializer,
+)
 
 class DefaultPagePagination(PageNumberPagination):
     page_size = 10
@@ -141,6 +147,95 @@ class ModerationQueueView(generics.ListAPIView):
         fraud_action = self.request.query_params.get("fraud_action")
         if fraud_action:
             qs = qs.filter(fraud_decision__action=fraud_action)
+
+        return qs
+
+
+class ModeratorRequestListView(generics.ListAPIView):
+    serializer_class = ModeratorAidRequestSerializer
+    permission_classes = [permissions.IsAuthenticated, IsModerator]
+    pagination_class = DefaultPagePagination
+
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ["category", "is_flagged"]
+    search_fields = ["title", "description", "region"]
+    ordering_fields = ["created_at", "updated_at", "requested_amount", "urgency", "risk_score"]
+    ordering = ["-updated_at", "-created_at"]
+
+    allowed_statuses = {
+        RequestStatus.ON_MODERATION,
+        RequestStatus.PUBLISHED,
+        RequestStatus.IN_PROGRESS,
+        RequestStatus.CLOSED,
+        RequestStatus.REJECTED,
+    }
+
+    @extend_schema(
+        operation_id="moderation_request_list",
+        tags=["request-moderation"],
+        parameters=[
+            OpenApiParameter(
+                name="status",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                description=(
+                    "Фильтр по status. Можно передать один статус, несколько "
+                    "параметров status или список через запятую."
+                ),
+            ),
+            OpenApiParameter(name="category", type=OpenApiTypes.STR, location=OpenApiParameter.QUERY),
+            OpenApiParameter(name="region", type=OpenApiTypes.STR, location=OpenApiParameter.QUERY),
+            OpenApiParameter(name="search", type=OpenApiTypes.STR, location=OpenApiParameter.QUERY),
+            OpenApiParameter(name="is_flagged", type=OpenApiTypes.BOOL, location=OpenApiParameter.QUERY),
+            OpenApiParameter(name="ordering", type=OpenApiTypes.STR, location=OpenApiParameter.QUERY),
+            OpenApiParameter(name="page", type=OpenApiTypes.INT, location=OpenApiParameter.QUERY),
+            OpenApiParameter(name="page_size", type=OpenApiTypes.INT, location=OpenApiParameter.QUERY),
+        ],
+        responses={
+            200: ModeratorAidRequestSerializer(many=True),
+            401: OpenApiResponse(description="Требуется JWT"),
+            403: OpenApiResponse(description="Недостаточно прав"),
+        },
+        summary="Read-only список заявок для модератора",
+        description=(
+            "Moderator/admin: история и текущие заявки по разрешённым lifecycle "
+            "статусам без telemetry/hash/internal полей."
+        ),
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
+    def get_queryset(self):
+        qs = (
+            AidRequest.objects
+            .exclude(status=RequestStatus.DRAFT)
+            .select_related("applicant", "applicant__applicant_profile", "fraud_decision")
+            .prefetch_related(
+                Prefetch(
+                    "applicant__applicant_profile__verification_requests",
+                    queryset=ApplicantVerification.objects.order_by("-submitted_at", "-id"),
+                ),
+                Prefetch(
+                    "status_history",
+                    queryset=RequestStatusHistory.objects.order_by("-created_at", "-id"),
+                ),
+            )
+        )
+
+        requested_statuses = []
+        for raw_value in self.request.query_params.getlist("status"):
+            requested_statuses.extend(
+                item.strip() for item in raw_value.split(",") if item.strip()
+            )
+        statuses = requested_statuses or list(self.allowed_statuses)
+        statuses = [item for item in statuses if item in self.allowed_statuses]
+        if not statuses:
+            return qs.none()
+        qs = qs.filter(status__in=statuses)
+
+        region = self.request.query_params.get("region")
+        if region:
+            qs = qs.filter(region__iexact=region)
 
         return qs
 

@@ -15,6 +15,11 @@ export async function getModerationQueue(params = {}) {
   return page(data);
 }
 
+export async function getModerationRequests(params = {}) {
+  const { data } = await api.get("/moderation/requests/", { params });
+  return page(data);
+}
+
 export async function decideModerationRequest(requestId, action, comment = "") {
   const { data } = await api.post(`/requests/moderation/${requestId}/`, { action, comment });
   return data;

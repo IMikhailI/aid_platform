@@ -100,6 +100,7 @@ moderator/admin в служебном read-only контракте.
 | Method | Path | Назначение | Роли | Request | Success | Ошибки | Статус |
 |---|---|---|---|---|---|---|---|
 | GET | `/api/requests/moderation/queue/` | Очередь заявок | moderator/admin | filters | ModeratorAidRequest[] | 403 | active |
+| GET | `/api/moderation/requests/` | Read-only список заявок по status для очереди и истории решений | moderator/admin | status?, category?, region?, search?, ordering?, page?, page_size? | ModeratorAidRequest[] | 401, 403 | active |
 | POST | `/api/requests/moderation/{request_id}/` | Approve/reject | moderator/admin | action, comment? | id, new_status | 400, 403, 404, 409 | active |
 | GET | `/api/moderation/verifications/` | Очередь verification | moderator/admin | status?, region?, ordering? | ModeratorVerification[] | 403 | active |
 | GET | `/api/moderation/verifications/{id}/` | Verification detail | moderator/admin | — | ModeratorVerification | 403, 404 | active |
@@ -140,6 +141,7 @@ moderator/admin в служебном read-only контракте.
 | verification submit/history | own | запрещено | запрещено | запрещено |
 | verification moderation | запрещено | запрещено | разрешено | разрешено |
 | request moderation | запрещено | запрещено | разрешено | разрешено |
+| request moderation history | запрещено | запрещено | RO | RO |
 | fraud decision/checks/recheck/override | запрещено | запрещено | разрешено | разрешено |
 | fulfillment moderation | запрещено | запрещено | RO | RO |
 | request history | own | own commitment | RO | RO |

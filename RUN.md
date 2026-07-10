@@ -310,6 +310,20 @@ serializer, permissions или response JSON схему нужно переге�
 ./seed_demo.sh
 ```
 
+Воспроизводимый demo-стенд для защиты диплома:
+```bash
+docker compose exec -T backend python manage.py seed_demo_stand
+```
+
+Полное пересоздание только локальных demo-записей:
+```bash
+docker compose exec -T backend python manage.py seed_demo_stand --reset-demo-data --reset-demo-passwords
+```
+
+Demo-пароли из команды `seed_demo_stand` предназначены только для локального
+стенда и не должны использоваться в production. Подробный сценарий показа:
+[`docs/DEMO_SCENARIO.md`](docs/DEMO_SCENARIO.md).
+
 Перезапуск только backend:
 ```bash
 docker compose restart backend
